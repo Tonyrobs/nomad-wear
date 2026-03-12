@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomad Wear | Sistema de Gestão e E-commerce</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Barlow:wght@400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; }
+        body { background-color: #ffffff; color: #000000; font-family: 'Barlow', sans-serif; overflow-x: hidden; }
+
+        h1, h2, h3, h4, .font-display { font-family: 'Barlow Condensed', sans-serif; }
+
+        .status-pill { padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+
+        input[type='range'] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type='range']::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #2563eb; border-radius: 3px; }
+        input[type='range']::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: #2563eb; cursor: pointer; -webkit-appearance: none; margin-top: -6px; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+        .admin-menu-active { color: #2563eb; background-color: #eff6ff; border-right: 3px solid #2563eb; font-weight: 900; }
+        .profile-menu-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 900; }
+
+        .hidden { display: none !important; }
+        .category-btn-active { background-color: #f3f4f6; border-left: 4px solid #2563eb; color: #000 !important; }
+
+        #cartDrawer { transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        #cartDrawer.open { transform: translateX(0); }
+        .cart-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .cart-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .attr-chip { cursor: pointer; border: 1px solid #e5e7eb; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; transition: all 0.15s; user-select: none; }
+        .attr-chip.selected { background-color: #000; color: #fff; border-color: #000; }
+        .attr-chip:hover:not(.selected) { border-color: #2563eb; color: #2563eb; }
+        .attr-chip.disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
+
+        /* Modal */
+        .modal-overlay { opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-box { transform: translateY(20px) scale(0.97); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); }
+        .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+
+        /* Toast */
+        #toast { transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        #toast.show { transform: translateX(0); }
+
+        /* Product card */
+        .product-card:hover .product-img-overlay { opacity: 1; }
+        .product-img-overlay { opacity: 0; transition: opacity 0.2s; }
+
+        /* KPI cards */
+        .kpi-card { border-left: 4px solid; }
+
+        /* Table row hover */
+        .table-row-hover:hover { background-color: #f9fafb; }
+
+        /* Tabs */
+        .tab-active { color: #2563eb; border-bottom: 3px solid #2563eb; font-weight: 900; }
+
+        /* Search input */
+        .search-input:focus { border-color: #2563eb; }
+
+        /* Pulse for low stock */
+        @keyframes pulse-red { 0%,100%{background-color:#fef2f2;} 50%{background-color:#fee2e2;} }
+        .low-stock { animation: pulse-red 2s infinite; }
+
+        /* Smooth section transitions */
+        .admin-content-section { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    </style>
+</head>
+<body class="bg-white text-black">
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast" class="fixed bottom-6 right-6 z-[100] bg-black text-white px-5 py-3 rounded shadow-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-3 max-w-xs">
+    <span id="toastIcon" class="text-base">✓</span>
+    <span id="toastMsg">Produto adicionado!</span>
+</div>
+
+<!-- CART OVERLAY -->
+<div id="cartOverlay" onclick="toggleCart()" class="cart-overlay fixed inset-0 bg-black/50 z-[60]"></div>
+
+<!-- CART DRAWER -->
+<div id="cartDrawer" class="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col">
+    <div class="p-6 border-b flex justify-between items-center">
+        <h2 class="text-2xl font-black uppercase italic tracking-tighter text-black font-display">Seu Carrinho</h2>
+        <button onclick="toggleCart()" class="text-gray-400 hover:text-black font-bold text-2xl leading-none">&times;</button>
+    </div>
+    <div id="cartItems" class="flex-1 overflow-y-auto p-6 space-y-6"></div>
+    <div class="p-6 border-t bg-gray-50">
+        <div class="space-y-2 mb-6 text-[11px] font-bold uppercase text-black">
+            <div class="flex justify-between"><span class="text-gray-400">Subtotal</span><span id="cartSubtotal">R$ 0,00</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Frete</span><span id="cartShipping">Grátis</span></div>
+            <div class="flex justify-between text-base border-t pt-3 mt-2 font-black">
+                <span>Total</span><span id="cartTotal" class="text-blue-600">R$ 0,00</span>
+            </div>
+        </div>
+        <button onclick="showToast('Funcionalidade de checkout em breve!','ℹ️')" class="w-full bg-black text-white py-4 font-black uppercase tracking-[0.2em] text-xs hover:bg-blue-600 transition">Finalizar Compra</button>
+    </div>
+</div>
+
+<!-- MODAL DE PRODUTO -->
+<div id="productModal" class="modal-overlay fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="modal-box bg-white w-full max-w-2xl rounded shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" id="productModalBox"></div>
+</div>
+
+<!-- MODAL DE EDIÇÃO DE PRODUTO -->
+<div id="editProductModal" class="modal-overlay fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="modal-box bg-white w-full max-w-lg rounded shadow-2xl" id="editProductModalBox"></div>
+</div>
+
+<!-- MODAL DE AJUSTE DE ESTOQUE -->
+<div id="stockModal" class="modal-overlay fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4">
+    <div class="modal-box bg-white w-full max-w-md rounded shadow-2xl" id="stockModalBox"></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center gap-4">
+        <h1 onclick="goToStoreHome()" class="text-xl font-black tracking-tighter uppercase italic cursor-pointer text-black font-display whitespace-nowrap">NOMAD<span class="text-blue-600">WEAR</span></h1>
+
+        <!-- Busca (loja) -->
+        <div id="store-search-bar" class="flex-1 max-w-xs hidden md:block">
+            <input type="text" id="searchInput" onInput="applyFilters()" placeholder="Buscar produtos..." class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs font-medium outline-none search-input transition placeholder-gray-300">
+        </div>
+
+        <div class="flex items-center gap-4">
+            <select id="viewSelector" onchange="switchView(this.value)" class="text-[10px] font-black border-2 border-black px-2 py-1 rounded outline-none cursor-pointer uppercase text-black">
+                <option value="store">VISÃO: CLIENTE</option>
+                <option value="admin">VISÃO: ADMIN</option>
+            </select>
+            <div id="store-nav-links" class="flex items-center gap-3">
+                <button onclick="showCustomerSection('profile')" class="text-[10px] font-black uppercase hover:text-blue-600 transition text-black">Minha Conta</button>
+                <button onclick="toggleCart()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-[10px] font-black uppercase hover:bg-blue-700 transition">
+                    Carrinho (<span id="cartCount">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ======================== VISÃO DA LOJA ======================== -->
+<div id="storeView" class="view-section">
+
+    <!-- CATÁLOGO -->
+    <div id="catalog-section" class="store-content">
+        <div class="max-w-7xl mx-auto px-6 py-10">
+            <div class="flex flex-col md:flex-row gap-10">
+
+                <!-- SIDEBAR -->
+                <aside class="w-full md:w-60 flex-shrink-0">
+                    <h2 class="text-4xl font-black mb-1 tracking-tighter text-black font-display italic">Produtos</h2>
+                    <p id="productCountLabel" class="text-blue-600 text-xs mb-8 font-bold uppercase tracking-widest">-- itens listados</p>
+
+                    <!-- Busca mobile -->
+                    <div class="mb-6 md:hidden">
+                        <input type="text" id="searchInputMobile" onInput="applyFilters()" placeholder="Buscar produtos..." class="w-full border border-gray-200 rounded px-3 py-2 text-xs font-medium outline-none search-input transition placeholder-gray-300">
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-[10px] font-black mb-2 uppercase italic text-gray-400">Ordenar Por</label>
+                        <select id="sortSelector" onchange="applyFilters()" class="w-full border border-gray-200 rounded p-2 text-xs font-bold uppercase outline-none focus:border-blue-600 text-black">
+                            <option value="featured">Destaques</option>
+                            <option value="low">Menor Preço</option>
+                            <option value="high">Maior Preço</option>
+                            <option value="new">Novidades</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-[10px] font-black mb-3 uppercase italic text-gray-400">Até: <span id="priceLabel" class="text-black">R$ 500+</span></label>
+                        <input type="range" min="50" max="500" value="500" step="10" id="priceRange" oninput="updatePriceFilter(this.value)">
+                        <div class="flex justify-between text-[10px] font-bold text-gray-300 mt-1">
+                            <span>R$ 50</span><span>R$ 500+</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1" id="categoryContainer">
+                        <label class="block text-[10px] font-black mb-3 uppercase italic text-gray-400">Categorias</label>
+                        <button onclick="filterByCategory('all')" class="cat-btn w-full text-left p-3 text-xs font-bold uppercase category-btn-active transition" data-cat="all">Todos</button>
+                        <button onclick="filterByCategory('camisetas')" class="cat-btn w-full text-left p-3 text-xs font-bold uppercase text-gray-400 hover:text-black transition" data-cat="camisetas">Camisetas</button>
+                        <button onclick="filterByCategory('casacos')" class="cat-btn w-full text-left p-3 text-xs font-bold uppercase text-gray-400 hover:text-black transition" data-cat="casacos">Casacos</button>
+                        <button onclick="filterByCategory('acessorios')" class="cat-btn w-full text-left p-3 text-xs font-bold uppercase text-gray-400 hover:text-black transition" data-cat="acessorios">Acessórios</button>
+                    </div>
+                </aside>
+
+                <!-- GRID DE PRODUTOS -->
+                <main class="flex-1">
+                    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-black"></div>
+                    <div id="noResults" class="hidden py-20 text-center text-gray-400 font-black italic uppercase font-display text-2xl">Nenhum produto encontrado.</div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÁREA DO CLIENTE -->
+    <div id="customer-profile-section" class="store-content hidden bg-gray-50 min-h-screen">
+        <div class="max-w-4xl mx-auto px-6 py-12">
+            <div class="flex items-center justify-between mb-8 border-b pb-6">
+                <h2 class="text-4xl font-black uppercase italic tracking-tighter text-black font-display">Minha Conta</h2>
+                <button onclick="goToStoreHome()" class="text-[10px] font-black uppercase text-blue-600 border-2 border-blue-600 px-4 py-2 hover:bg-blue-600 hover:text-white transition">← Voltar à Loja</button>
+            </div>
+            <div class="flex space-x-8 mb-8 border-b overflow-x-auto">
+                <button onclick="switchProfileTab('personal-data')" id="tab-personal-data" class="profile-tab text-xs font-black uppercase tracking-widest pb-4 profile-menu-active whitespace-nowrap">Dados Pessoais</button>
+                <button onclick="switchProfileTab('addresses')" id="tab-addresses" class="profile-tab text-xs font-black uppercase tracking-widest pb-4 text-gray-400 whitespace-nowrap">Meus Endereços</button>
+                <button onclick="switchProfileTab('orders')" id="tab-orders" class="profile-tab text-xs font-black uppercase tracking-widest pb-4 text-gray-400 whitespace-nowrap">Meus Pedidos</button>
+            </div>
+            <div id="content-personal-data" class="profile-tab-content bg-white p-8 border rounded shadow-sm text-black">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Nome Completo</label>
+                            <input type="text" value="Ricardo de Souza" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">E-mail</label>
+                            <input type="email" value="ricardo@email.com" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Telefone</label>
+                            <input type="text" value="(11) 99999-0000" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                        </div>
+                    </div>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">CPF (Inalterável)</label>
+                            <input type="text" value="123.***.***-00" disabled class="w-full border-b-2 py-2 font-medium bg-gray-50 text-gray-300 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Nova Senha</label>
+                            <input type="password" placeholder="••••••••" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                        </div>
+                        <button onclick="showToast('Dados atualizados com sucesso!','✓')" class="bg-black text-white w-full py-3 text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition mt-2">Salvar Alterações</button>
+                    </div>
+                </div>
+            </div>
+            <div id="content-addresses" class="profile-tab-content hidden space-y-4 text-black">
+                <div class="bg-white p-5 border rounded shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="font-black uppercase italic text-sm font-display">Principal — Casa</p>
+                        <p class="text-xs text-gray-500 mt-1">Rua das Acácias, 123 — Centro, São Paulo/SP — CEP 01310-000</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="showToast('Editar endereço em breve!','✏️')" class="text-[10px] font-black uppercase text-blue-600">Editar</button>
+                        <button onclick="showToast('Endereço removido!','🗑️')" class="text-[10px] font-black uppercase text-red-500">Excluir</button>
+                    </div>
+                </div>
+                <button onclick="showToast('Formulário de endereço em breve!','📍')" class="w-full border-2 border-dashed border-gray-300 py-6 text-[10px] font-black uppercase text-gray-400 hover:border-blue-600 hover:text-blue-600 transition">+ Adicionar Novo Endereço</button>
+            </div>
+            <div id="content-orders" class="profile-tab-content hidden text-black">
+                <div class="bg-white border rounded shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-[11px] font-bold uppercase">
+                        <thead class="bg-gray-50 border-b text-gray-400 text-[10px]">
+                            <tr><th class="p-4">Pedido</th><th class="p-4">Data</th><th class="p-4">Status</th><th class="p-4">Total</th><th class="p-4">Ação</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b table-row-hover"><td class="p-4 italic text-gray-400">#98312</td><td class="p-4">12/05/2025</td><td class="p-4"><span class="status-pill bg-green-100 text-green-700">Entregue</span></td><td class="p-4 font-black">R$ 240,00</td><td class="p-4"><button onclick="showToast('Detalhes do pedido em breve!','📦')" class="text-blue-600 font-black">Ver Itens</button></td></tr>
+                            <tr class="border-b table-row-hover"><td class="p-4 italic text-gray-400">#98401</td><td class="p-4">03/06/2025</td><td class="p-4"><span class="status-pill bg-yellow-100 text-yellow-700">Em Trânsito</span></td><td class="p-4 font-black">R$ 350,00</td><td class="p-4"><button onclick="showToast('Detalhes do pedido em breve!','📦')" class="text-blue-600 font-black">Ver Itens</button></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== VISÃO ADMIN ======================== -->
+<div id="adminView" class="view-section hidden">
+    <div class="flex min-h-screen">
+
+        <!-- SIDEBAR ADMIN -->
+        <aside class="w-64 border-r border-gray-200 bg-white flex flex-col p-5 space-y-6 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+            <div>
+                <p class="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-4 italic">Operacional</p>
+                <nav class="space-y-1">
+                    <button onclick="showAdminSection('sec-dashboard')" id="btn-sec-dashboard" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded text-gray-500 hover:bg-gray-50 transition">📊 Dashboard</button>
+                    <button onclick="showAdminSection('sec-produtos')" id="btn-sec-produtos" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded admin-menu-active transition">📦 Catálogo</button>
+                    <button onclick="showAdminSection('sec-estoque')" id="btn-sec-estoque" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded text-gray-500 hover:bg-gray-50 transition">📉 Estoque</button>
+                    <button onclick="showAdminSection('sec-pedidos')" id="btn-sec-pedidos" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded text-gray-500 hover:bg-gray-50 transition">🛒 Pedidos</button>
+                    <button onclick="showAdminSection('sec-clientes')" id="btn-sec-clientes" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded text-gray-500 hover:bg-gray-50 transition">👥 Clientes</button>
+                </nav>
+            </div>
+            <div>
+                <p class="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4 italic">Configurações</p>
+                <nav class="space-y-1">
+                    <button onclick="showToast('Configurações em breve!','⚙️')" class="admin-nav-item w-full text-left px-4 py-3 text-xs font-bold uppercase rounded text-gray-500 hover:bg-gray-50 transition">⚙️ Configurações</button>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO ADMIN -->
+        <main class="flex-1 p-8 bg-gray-50 overflow-y-auto">
+
+            <!-- DASHBOARD -->
+            <section id="sec-dashboard" class="admin-content-section hidden">
+                <h3 class="text-3xl font-black uppercase italic tracking-tighter mb-8 text-black font-display">Dashboard</h3>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                    <div class="bg-white p-5 rounded border kpi-card border-l-blue-500 shadow-sm">
+                        <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Produtos Ativos</p>
+                        <p class="text-3xl font-black font-display italic" id="kpi-active">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded border kpi-card border-l-red-500 shadow-sm">
+                        <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Esgotados</p>
+                        <p class="text-3xl font-black font-display italic" id="kpi-out">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded border kpi-card border-l-yellow-500 shadow-sm">
+                        <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Estoque Baixo</p>
+                        <p class="text-3xl font-black font-display italic" id="kpi-low">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded border kpi-card border-l-green-500 shadow-sm">
+                        <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">SKUs Gerados</p>
+                        <p class="text-3xl font-black font-display italic" id="kpi-skus">0</p>
+                    </div>
+                </div>
+
+                <!-- Alerta de estoque baixo -->
+                <div class="bg-white border rounded shadow-sm mb-8">
+                    <div class="px-6 py-4 border-b flex items-center justify-between">
+                        <h4 class="text-sm font-black uppercase italic font-display">⚠️ Alertas de Estoque Baixo</h4>
+                        <button onclick="showAdminSection('sec-estoque')" class="text-[10px] font-black text-blue-600 uppercase">Ver Estoque →</button>
+                    </div>
+                    <div id="dashboardAlerts" class="p-4 space-y-2"></div>
+                </div>
+
+                <!-- Lista rápida de produtos -->
+                <div class="bg-white border rounded shadow-sm">
+                    <div class="px-6 py-4 border-b flex items-center justify-between">
+                        <h4 class="text-sm font-black uppercase italic font-display">Produtos Recentes</h4>
+                        <button onclick="showAdminSection('sec-produtos')" class="text-[10px] font-black text-blue-600 uppercase">Ver Todos →</button>
+                    </div>
+                    <div id="dashboardProductList" class="divide-y"></div>
+                </div>
+            </section>
+
+            <!-- CATÁLOGO / PRODUTOS -->
+            <section id="sec-produtos" class="admin-content-section">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-3xl font-black uppercase italic tracking-tighter text-black font-display">Catálogo</h3>
+                    <div class="flex gap-3">
+                        <button onclick="openAddProduct()" class="bg-white border-2 border-black text-black px-5 py-2 text-[10px] font-black uppercase hover:bg-gray-50 transition">+ Novo Produto</button>
+                        <button onclick="openVariationManager()" class="bg-black text-white px-5 py-2 text-[10px] font-black uppercase hover:bg-blue-600 transition">Gerar Matriz de SKUs</button>
+                    </div>
+                </div>
+
+                <!-- Gerador de Variações -->
+                <div id="variationManager" class="hidden bg-white border p-8 mb-8 rounded shadow-md text-black">
+                    <div class="flex justify-between items-start mb-6 border-b pb-4">
+                        <div>
+                            <h4 class="text-xl font-black uppercase italic tracking-tight font-display">Criação de Atributos Combinados</h4>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase mt-1">SKUs gerados a partir do código base do produto pai.</p>
+                        </div>
+                        <button onclick="closeVariationManager()" class="text-gray-400 hover:text-black font-black text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 italic">1. Selecionar Produto Pai</label>
+                                <select id="parentProductSelect" onchange="updateSkuPreview()" class="w-full border border-gray-200 rounded p-3 text-xs font-bold uppercase outline-none focus:border-blue-600"></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 italic">2. Tamanhos</label>
+                                    <div class="flex flex-wrap gap-2" id="sizeList">
+                                        <div onclick="toggleAttr(this,'size','PP')" class="attr-chip">PP</div>
+                                        <div onclick="toggleAttr(this,'size','P')" class="attr-chip">P</div>
+                                        <div onclick="toggleAttr(this,'size','M')" class="attr-chip">M</div>
+                                        <div onclick="toggleAttr(this,'size','G')" class="attr-chip">G</div>
+                                        <div onclick="toggleAttr(this,'size','GG')" class="attr-chip">GG</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 italic">3. Cores</label>
+                                    <div class="flex flex-wrap gap-2" id="colorList">
+                                        <div onclick="toggleAttr(this,'color','Black','BK')" class="attr-chip">Black</div>
+                                        <div onclick="toggleAttr(this,'color','White','WH')" class="attr-chip">White</div>
+                                        <div onclick="toggleAttr(this,'color','Blue','BL')" class="attr-chip">Blue</div>
+                                        <div onclick="toggleAttr(this,'color','Grey','GY')" class="attr-chip">Grey</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="commitGeneratedSKUs()" class="w-full bg-blue-600 text-white py-4 text-[10px] font-black uppercase tracking-widest hover:bg-black transition">✓ Salvar SKUs no Estoque</button>
+                        </div>
+                        <div class="bg-gray-50 p-5 border rounded border-dashed border-gray-300">
+                            <label class="block text-[10px] font-black uppercase text-gray-400 mb-4 italic">Visualização da Matriz</label>
+                            <div id="generatedSkusList" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                <p class="text-[9px] text-gray-400 font-bold uppercase italic text-center py-16">Aguardando seleção de atributos...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtro rápido -->
+                <div class="flex gap-3 mb-4">
+                    <input type="text" id="adminSearch" oninput="renderAdminProducts()" placeholder="Buscar por nome ou SKU..." class="border border-gray-200 rounded px-3 py-2 text-xs font-medium outline-none search-input transition flex-1 max-w-xs">
+                    <select id="adminCatFilter" onchange="renderAdminProducts()" class="border border-gray-200 rounded px-3 py-2 text-xs font-bold uppercase outline-none focus:border-blue-600">
+                        <option value="all">Todas Categorias</option>
+                        <option value="camisetas">Camisetas</option>
+                        <option value="casacos">Casacos</option>
+                        <option value="acessorios">Acessórios</option>
+                    </select>
+                </div>
+
+                <div class="bg-white border rounded shadow-sm overflow-hidden text-black">
+                    <table class="w-full text-left text-[11px] font-bold uppercase">
+                        <thead class="bg-gray-100 border-b text-[10px] text-gray-400">
+                            <tr><th class="p-4">SKU Pai</th><th class="p-4">Nome do Item</th><th class="p-4">Categoria</th><th class="p-4">Preço</th><th class="p-4">Estoque</th><th class="p-4">Status</th><th class="p-4 text-right">Ações</th></tr>
+                        </thead>
+                        <tbody id="adminProductTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ESTOQUE -->
+            <section id="sec-estoque" class="admin-content-section hidden">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-3xl font-black uppercase italic tracking-tighter text-black font-display">Controle de Estoque</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase text-gray-400">Filtrar:</span>
+                        <button onclick="filterStock('all')" id="sf-all" class="stock-filter-btn text-[10px] font-black uppercase px-3 py-1 border-2 border-black bg-black text-white transition">Todos</button>
+                        <button onclick="filterStock('low')" id="sf-low" class="stock-filter-btn text-[10px] font-black uppercase px-3 py-1 border-2 border-black text-black hover:bg-gray-50 transition">Baixo</button>
+                        <button onclick="filterStock('out')" id="sf-out" class="stock-filter-btn text-[10px] font-black uppercase px-3 py-1 border-2 border-black text-black hover:bg-gray-50 transition">Esgotado</button>
+                    </div>
+                </div>
+                <div class="bg-white border rounded shadow-sm overflow-hidden text-black">
+                    <table class="w-full text-left text-[11px] font-bold uppercase">
+                        <thead class="bg-gray-100 border-b text-[10px] text-gray-400">
+                            <tr><th class="p-4">SKU Único</th><th class="p-4">Produto</th><th class="p-4">Variação</th><th class="p-4 text-center">Qtd</th><th class="p-4 text-center">Status</th><th class="p-4 text-right">Ação</th></tr>
+                        </thead>
+                        <tbody id="adminStockTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PEDIDOS -->
+            <section id="sec-pedidos" class="admin-content-section hidden">
+                <h3 class="text-3xl font-black uppercase italic tracking-tighter mb-8 text-black font-display">Pedidos</h3>
+                <div class="bg-white border rounded shadow-sm overflow-hidden text-black">
+                    <table class="w-full text-left text-[11px] font-bold uppercase">
+                        <thead class="bg-gray-100 border-b text-[10px] text-gray-400">
+                            <tr><th class="p-4">Pedido</th><th class="p-4">Cliente</th><th class="p-4">Data</th><th class="p-4">Itens</th><th class="p-4">Total</th><th class="p-4">Status</th><th class="p-4 text-right">Ação</th></tr>
+                        </thead>
+                        <tbody id="adminOrderTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- CLIENTES -->
+            <section id="sec-clientes" class="admin-content-section hidden">
+                <h3 class="text-3xl font-black uppercase italic tracking-tighter mb-8 text-black font-display">Base de Clientes</h3>
+                <div class="bg-white border rounded shadow-sm overflow-hidden text-black">
+                    <table class="w-full text-left text-[11px] font-bold uppercase">
+                        <thead class="bg-gray-100 border-b text-[10px] text-gray-400">
+                            <tr><th class="p-4">Cliente</th><th class="p-4">E-mail</th><th class="p-4">Cidade</th><th class="p-4">Pedidos</th><th class="p-4">Total Gasto</th><th class="p-4 text-right">Ação</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b table-row-hover">
+                                <td class="p-4 italic font-black">Ricardo de Souza</td>
+                                <td class="p-4 text-gray-400 lowercase font-medium">ricardo@email.com</td>
+                                <td class="p-4 text-gray-400">São Paulo/SP</td>
+                                <td class="p-4">05 pedidos</td>
+                                <td class="p-4 text-green-600">R$ 1.240,00</td>
+                                <td class="p-4 text-right"><button onclick="showToast('Perfil do cliente em breve!','👤')" class="text-blue-600 font-black">Ver Perfil</button></td>
+                            </tr>
+                            <tr class="border-b table-row-hover">
+                                <td class="p-4 italic font-black">Ana Lima</td>
+                                <td class="p-4 text-gray-400 lowercase font-medium">ana.lima@email.com</td>
+                                <td class="p-4 text-gray-400">Rio de Janeiro/RJ</td>
+                                <td class="p-4">02 pedidos</td>
+                                <td class="p-4 text-green-600">R$ 430,00</td>
+                                <td class="p-4 text-right"><button onclick="showToast('Perfil do cliente em breve!','👤')" class="text-blue-600 font-black">Ver Perfil</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script>
+// ==================== DADOS ====================
+let PRODUCTS = [
+    { id: 1, name: "Camiseta Nomad Heavy", price: 120, cat: "camisetas", sku: "NMD-101", stock: 12, isNew: true,  desc: "Camiseta oversized de algodão 100% premium, corte pesado e confortável." },
+    { id: 2, name: "Moletom Oversized Blue", price: 280, cat: "casacos",   sku: "NMD-205", stock: 5,  isNew: false, desc: "Moletom com capuz em fleece premium. Fit oversized, cós e punhos canelados." },
+    { id: 3, name: "Boné Street Black",      price: 85,  cat: "acessorios",sku: "NMD-99",  stock: 2,  isNew: true,  desc: "Boné 5-panel com bordado tonal e fechamento ajustável." },
+    { id: 4, name: "Camiseta Boxy White",    price: 110, cat: "camisetas", sku: "NMD-102", stock: 25, isNew: false, desc: "Camiseta boxy com caimento quadrado moderno. Algodão penteado extra macio." },
+    { id: 5, name: "Jaqueta Corta Vento",    price: 350, cat: "casacos",   sku: "NMD-206", stock: 8,  isNew: false, desc: "Jaqueta leve impermeável com bolsos frontais e capuz embutido." },
+    { id: 6, name: "Shoulder Bag Tech",      price: 150, cat: "acessorios",sku: "NMD-100", stock: 0,  isNew: true,  desc: "Bolsa shoulder em nylon ripstop com compartimento frontal e alça ajustável." }
+];
+
+let SKU_STOCK = [
+    { sku: "NMD-101-BK-P",  product: "Camiseta Nomad Heavy",  variation: "Black / P",  qty: 15 },
+    { sku: "NMD-101-BK-M",  product: "Camiseta Nomad Heavy",  variation: "Black / M",  qty: 2  },
+    { sku: "NMD-101-WH-P",  product: "Camiseta Nomad Heavy",  variation: "White / P",  qty: 20 },
+    { sku: "NMD-101-WH-M",  product: "Camiseta Nomad Heavy",  variation: "White / M",  qty: 8  },
+    { sku: "NMD-205-BL-M",  product: "Moletom Oversized Blue",variation: "Blue / M",   qty: 5  },
+    { sku: "NMD-205-BL-G",  product: "Moletom Oversized Blue",variation: "Blue / G",   qty: 0  },
+];
+
+let ORDERS = [
+    { id: '#98312', client: 'Ricardo de Souza', date: '12/05/2025', items: 3, total: 240, status: 'Entregue' },
+    { id: '#98401', client: 'Ricardo de Souza', date: '03/06/2025', items: 1, total: 350, status: 'Em Trânsito' },
+    { id: '#98450', client: 'Ana Lima',         date: '10/06/2025', items: 2, total: 195, status: 'Processando' },
+    { id: '#98499', client: 'Ana Lima',         date: '25/06/2025', items: 1, total: 150, status: 'Aguard. Pagto' },
+];
+
+let cart = [];
+let currentCategory = 'all';
+let currentMaxPrice = 500;
+let selectedSizes = [];
+let selectedColors = [];
+let stockFilter = 'all';
+let toastTimer = null;
+
+// ==================== TOAST ====================
+function showToast(msg, icon = '✓', duration = 2800) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    document.getElementById('toastIcon').textContent = icon;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ==================== MODAL PRODUTO ====================
+// Estado interno do modal de produto
+let _modalProductId = null;
+let _modalSelectedColor = null;
+let _modalSelectedSize  = null;
+
+function openProductModal(productId) {
+    const p = PRODUCTS.find(x => x.id === productId);
+    if (!p) return;
+    _modalProductId    = productId;
+    _modalSelectedColor = null;
+    _modalSelectedSize  = null;
+
+    // Variações deste produto no estoque
+    const skus = SKU_STOCK.filter(s => s.sku.startsWith(p.sku + '-'));
+
+    // Extrair cores e tamanhos únicos a partir dos SKUs reais
+    const colorsMap = {}; // { code: name }
+    const allSizes  = new Set();
+    skus.forEach(s => {
+        // padrão: PARENT-COLOR-SIZE  ex: NMD-101-BK-P
+        const parts = s.sku.replace(p.sku + '-', '').split('-');
+        if (parts.length >= 2) {
+            const colorCode = parts[0];
+            const size      = parts.slice(1).join('-');
+            // Obter nome de cor pelo código
+            const colorName = {'BK':'Black','WH':'White','BL':'Blue','GY':'Grey'}[colorCode] || colorCode;
+            colorsMap[colorCode] = colorName;
+            allSizes.add(size);
+        }
+    });
+
+    const hasVariations = skus.length > 0;
+    const box = document.getElementById('productModalBox');
+
+    box.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center text-gray-300 font-bold italic uppercase text-xs p-6 min-h-64">
+                [IMG_${p.sku}]
+            </div>
+            <div class="p-8 flex flex-col justify-between">
+                <div>
+                    <p class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">${p.cat}</p>
+                    <h3 class="text-2xl font-black uppercase italic tracking-tighter mb-1 font-display">${p.name}</h3>
+                    <p class="text-2xl font-black text-blue-600 mb-3 font-display">R$ ${p.price.toFixed(2)}</p>
+                    <p class="text-xs text-gray-500 mb-5 leading-relaxed">${p.desc}</p>
+
+                    ${hasVariations ? `
+                    <div class="mb-4">
+                        <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Cor</p>
+                        <div class="flex flex-wrap gap-2" id="modal-colors">
+                            ${Object.entries(colorsMap).map(([code, name]) => {
+                                const hasStock = skus.some(s => s.sku.includes('-' + code + '-') && s.qty > 0);
+                                return `<div onclick="selectModalColor('${code}')" data-code="${code}" class="attr-chip ${!hasStock ? 'disabled' : ''}">${name}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Tamanho</p>
+                        <div class="flex flex-wrap gap-2" id="modal-sizes">
+                            ${[...allSizes].map(size => `<div data-size="${size}" class="attr-chip disabled" onclick="selectModalSize('${size}')">${size}</div>`).join('')}
+                        </div>
+                    </div>
+                    <div id="modal-sku-feedback" class="text-[10px] font-bold uppercase text-gray-400 italic mb-2 min-h-[16px]"></div>
+                    ` : `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+                        <p class="text-[10px] font-bold uppercase text-yellow-700">Sem variações cadastradas. O admin precisa gerar a matriz de SKUs para este produto.</p>
+                    </div>
+                    `}
+                </div>
+                <div class="space-y-3">
+                    <button id="modal-add-btn" onclick="addToCartFromModal()" disabled class="w-full bg-gray-200 text-gray-400 py-4 text-[10px] font-black uppercase tracking-widest cursor-not-allowed transition">
+                        Selecione cor e tamanho
+                    </button>
+                    <button onclick="closeProductModal()" class="w-full border-2 border-gray-200 py-3 text-[10px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition">Fechar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('productModal').classList.add('open');
+}
+
+function selectModalColor(colorCode) {
+    const p    = PRODUCTS.find(x => x.id === _modalProductId);
+    const skus = SKU_STOCK.filter(s => s.sku.startsWith(p.sku + '-'));
+
+    _modalSelectedColor = colorCode;
+    _modalSelectedSize  = null;
+
+    // Highlight cor selecionada
+    document.querySelectorAll('#modal-colors .attr-chip').forEach(el => {
+        el.classList.toggle('selected', el.dataset.code === colorCode);
+    });
+
+    // Atualizar tamanhos disponíveis para essa cor
+    document.querySelectorAll('#modal-sizes .attr-chip').forEach(el => {
+        const size    = el.dataset.size;
+        const skuKey  = `${p.sku}-${colorCode}-${size}`;
+        const skuItem = skus.find(s => s.sku === skuKey);
+        const inStock = skuItem && skuItem.qty > 0;
+
+        el.classList.remove('selected', 'disabled');
+        if (!inStock) {
+            el.classList.add('disabled');
+            el.onclick = null;
+        } else {
+            el.onclick = () => selectModalSize(size);
+        }
+    });
+
+    updateModalButton();
+}
+
+function selectModalSize(size) {
+    if (!_modalSelectedColor) {
+        showToast('Selecione uma cor primeiro!', '⚠️');
+        return;
+    }
+    _modalSelectedSize = size;
+
+    document.querySelectorAll('#modal-sizes .attr-chip').forEach(el => {
+        el.classList.toggle('selected', el.dataset.size === size);
+    });
+
+    updateModalButton();
+}
+
+function updateModalButton() {
+    const btn      = document.getElementById('modal-add-btn');
+    const feedback = document.getElementById('modal-sku-feedback');
+    if (!btn) return;
+
+    if (!_modalSelectedColor) {
+        btn.disabled = true;
+        btn.className = 'w-full bg-gray-200 text-gray-400 py-4 text-[10px] font-black uppercase tracking-widest cursor-not-allowed transition';
+        btn.textContent = 'Selecione cor e tamanho';
+        if (feedback) feedback.textContent = '';
+        return;
+    }
+    if (!_modalSelectedSize) {
+        btn.disabled = true;
+        btn.className = 'w-full bg-gray-200 text-gray-400 py-4 text-[10px] font-black uppercase tracking-widest cursor-not-allowed transition';
+        btn.textContent = 'Selecione o tamanho';
+        if (feedback) feedback.textContent = '';
+        return;
+    }
+
+    const p      = PRODUCTS.find(x => x.id === _modalProductId);
+    const skuKey = `${p.sku}-${_modalSelectedColor}-${_modalSelectedSize}`;
+    const item   = SKU_STOCK.find(s => s.sku === skuKey);
+    const qty    = item ? item.qty : 0;
+
+    if (qty === 0) {
+        btn.disabled = true;
+        btn.className = 'w-full bg-gray-100 text-gray-400 py-4 text-[10px] font-black uppercase tracking-widest cursor-not-allowed transition';
+        btn.textContent = 'Combinação Esgotada';
+        if (feedback) feedback.innerHTML = `<span class="text-red-500">SKU: ${skuKey} — Esgotado</span>`;
+    } else {
+        btn.disabled = false;
+        btn.className = 'w-full bg-black text-white py-4 text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition cursor-pointer';
+        btn.textContent = 'Adicionar ao Carrinho';
+        if (feedback) feedback.innerHTML = `<span class="text-green-600">SKU: ${skuKey} — ${qty} ${qty === 1 ? 'unidade' : 'unidades'} disponíveis</span>`;
+    }
+}
+
+function addToCartFromModal() {
+    if (!_modalSelectedColor || !_modalSelectedSize) return;
+    const p      = PRODUCTS.find(x => x.id === _modalProductId);
+    const skuKey = `${p.sku}-${_modalSelectedColor}-${_modalSelectedSize}`;
+    const item   = SKU_STOCK.find(s => s.sku === skuKey);
+    if (!item || item.qty === 0) { showToast('Combinação esgotada!', '⚠️'); return; }
+
+    const colorName = {'BK':'Black','WH':'White','BL':'Blue','GY':'Grey'}[_modalSelectedColor] || _modalSelectedColor;
+    const cartKey   = `${p.id}-${skuKey}`;
+    const existing  = cart.find(i => i.cartKey === cartKey);
+
+    if (existing) {
+        if (existing.quantity >= item.qty) { showToast('Limite de estoque atingido!', '⚠️'); return; }
+        existing.quantity += 1;
+    } else {
+        cart.push({ ...p, cartKey, skuFull: skuKey, variation: `${colorName} / ${_modalSelectedSize}`, quantity: 1 });
+    }
+
+    updateCartUI();
+    closeProductModal();
+    showToast(`${p.name} (${colorName} / ${_modalSelectedSize}) adicionado!`, '🛒');
+    toggleCart();
+}
+
+function closeProductModal() {
+    document.getElementById('productModal').classList.remove('open');
+    _modalProductId = null;
+    _modalSelectedColor = null;
+    _modalSelectedSize  = null;
+}
+
+// ==================== MODAL EDITAR PRODUTO ====================
+function openEditProduct(productId) {
+    const p = PRODUCTS.find(x => x.id === productId);
+    const box = document.getElementById('editProductModalBox');
+    box.innerHTML = `
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h4 class="text-xl font-black uppercase italic font-display">Editar Produto</h4>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-black font-black text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Nome</label>
+                    <input id="edit-name" type="text" value="${p.name}" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Preço (R$)</label>
+                        <input id="edit-price" type="number" value="${p.price}" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Estoque</label>
+                        <input id="edit-stock" type="number" value="${p.stock}" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Categoria</label>
+                    <select id="edit-cat" class="w-full border border-gray-200 rounded p-2 text-xs font-bold uppercase outline-none focus:border-blue-600">
+                        <option value="camisetas" ${p.cat==='camisetas'?'selected':''}>Camisetas</option>
+                        <option value="casacos"   ${p.cat==='casacos'  ?'selected':''}>Casacos</option>
+                        <option value="acessorios"${p.cat==='acessorios'?'selected':''}>Acessórios</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Descrição</label>
+                    <textarea id="edit-desc" class="w-full border border-gray-200 rounded p-2 text-xs font-medium outline-none focus:border-blue-600 transition resize-none h-20">${p.desc}</textarea>
+                </div>
+                <div class="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="edit-new" ${p.isNew?'checked':''} class="w-4 h-4 accent-blue-600">
+                    <label for="edit-new" class="text-[10px] font-black uppercase text-gray-400">Marcar como Novidade</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveProduct(${p.id})" class="flex-1 bg-black text-white py-3 text-[10px] font-black uppercase hover:bg-blue-600 transition">Salvar Alterações</button>
+                <button onclick="closeEditModal()" class="flex-1 border-2 border-gray-200 py-3 text-[10px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('editProductModal').classList.add('open');
+}
+
+function openAddProduct() {
+    const box = document.getElementById('editProductModalBox');
+    const newId = Math.max(...PRODUCTS.map(p => p.id)) + 1;
+    box.innerHTML = `
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h4 class="text-xl font-black uppercase italic font-display">Novo Produto</h4>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-black font-black text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Nome</label>
+                    <input id="edit-name" type="text" placeholder="Ex: Camiseta Nova Linha" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">SKU Pai</label>
+                        <input id="edit-sku" type="text" placeholder="Ex: NMD-103" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Preço (R$)</label>
+                        <input id="edit-price" type="number" placeholder="0" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Estoque Inicial</label>
+                        <input id="edit-stock" type="number" value="0" class="w-full border-b-2 py-2 font-medium outline-none focus:border-blue-600 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Categoria</label>
+                        <select id="edit-cat" class="w-full border border-gray-200 rounded p-2 text-xs font-bold uppercase outline-none focus:border-blue-600">
+                            <option value="camisetas">Camisetas</option>
+                            <option value="casacos">Casacos</option>
+                            <option value="acessorios">Acessórios</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Descrição</label>
+                    <textarea id="edit-desc" class="w-full border border-gray-200 rounded p-2 text-xs font-medium outline-none focus:border-blue-600 transition resize-none h-20" placeholder="Descrição do produto..."></textarea>
+                </div>
+                <div class="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="edit-new" class="w-4 h-4 accent-blue-600">
+                    <label for="edit-new" class="text-[10px] font-black uppercase text-gray-400">Marcar como Novidade</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="addNewProduct(${newId})" class="flex-1 bg-black text-white py-3 text-[10px] font-black uppercase hover:bg-blue-600 transition">Adicionar Produto</button>
+                <button onclick="closeEditModal()" class="flex-1 border-2 border-gray-200 py-3 text-[10px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('editProductModal').classList.add('open');
+}
+
+function addNewProduct(newId) {
+    const name  = document.getElementById('edit-name').value.trim();
+    const sku   = (document.getElementById('edit-sku')?.value || '').trim().toUpperCase();
+    const price = parseFloat(document.getElementById('edit-price').value);
+    const stock = parseInt(document.getElementById('edit-stock').value);
+    const cat   = document.getElementById('edit-cat').value;
+    const desc  = document.getElementById('edit-desc').value.trim();
+    const isNew = document.getElementById('edit-new').checked;
+    if (!name || !sku || isNaN(price)) { showToast('Preencha Nome, SKU e Preço!','⚠️'); return; }
+    PRODUCTS.push({ id: newId, name, price, cat, sku, stock, isNew, desc });
+    closeEditModal();
+    renderAdminProducts();
+    showToast(`${name} adicionado com sucesso!`, '✓');
+}
+
+function saveProduct(productId) {
+    const p     = PRODUCTS.find(x => x.id === productId);
+    p.name      = document.getElementById('edit-name').value;
+    p.price     = parseFloat(document.getElementById('edit-price').value);
+    p.stock     = parseInt(document.getElementById('edit-stock').value);
+    p.cat       = document.getElementById('edit-cat').value;
+    p.desc      = document.getElementById('edit-desc').value;
+    p.isNew     = document.getElementById('edit-new').checked;
+    closeEditModal();
+    renderAdminProducts();
+    renderDashboard();
+    showToast(`${p.name} atualizado!`, '✓');
+}
+
+function closeEditModal() {
+    document.getElementById('editProductModal').classList.remove('open');
+}
+
+// ==================== MODAL ESTOQUE ====================
+function openStockModal(sku) {
+    const item = SKU_STOCK.find(x => x.sku === sku);
+    const box  = document.getElementById('stockModalBox');
+    box.innerHTML = `
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div>
+                    <h4 class="text-xl font-black uppercase italic font-display">Ajustar Estoque</h4>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">${sku}</p>
+                </div>
+                <button onclick="closeStockModal()" class="text-gray-400 hover:text-black font-black text-2xl leading-none">&times;</button>
+            </div>
+            <p class="text-xs font-bold uppercase text-gray-400 mb-1">Produto</p>
+            <p class="font-black italic text-sm mb-1 font-display">${item ? item.product : sku}</p>
+            <p class="text-xs text-gray-400 mb-6">${item ? item.variation : '—'}</p>
+            <div class="bg-gray-50 border rounded p-4 mb-6 flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-gray-400">Estoque Atual</span>
+                <span class="text-2xl font-black font-display ${item && item.qty === 0 ? 'text-red-500' : item && item.qty <= 3 ? 'text-yellow-500' : 'text-green-600'}">${item ? item.qty : 0} un.</span>
+            </div>
+            <div class="mb-6">
+                <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Tipo de Ajuste</label>
+                <div class="flex gap-2 mb-4">
+                    <button onclick="setAdjType(this,'add')" id="adj-add" class="adj-type-btn flex-1 py-2 text-[10px] font-black uppercase border-2 border-black bg-black text-white transition">+ Entrada</button>
+                    <button onclick="setAdjType(this,'sub')" id="adj-sub" class="adj-type-btn flex-1 py-2 text-[10px] font-black uppercase border-2 border-black text-black hover:bg-gray-50 transition">− Saída</button>
+                    <button onclick="setAdjType(this,'set')" id="adj-set" class="adj-type-btn flex-1 py-2 text-[10px] font-black uppercase border-2 border-black text-black hover:bg-gray-50 transition">= Definir</button>
+                </div>
+                <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Quantidade</label>
+                <input id="adj-qty" type="number" value="5" min="0" class="w-full border-2 border-black rounded p-3 font-black text-xl outline-none text-center focus:border-blue-600 transition">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="applyStockAdjust('${sku}')" class="flex-1 bg-black text-white py-3 text-[10px] font-black uppercase hover:bg-blue-600 transition">Confirmar Ajuste</button>
+                <button onclick="closeStockModal()" class="flex-1 border-2 border-gray-200 py-3 text-[10px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('stockModal').classList.add('open');
+}
+
+function setAdjType(btn, type) {
+    document.querySelectorAll('.adj-type-btn').forEach(b => {
+        b.classList.remove('bg-black','text-white');
+        b.classList.add('text-black');
+    });
+    btn.classList.add('bg-black','text-white');
+    btn.classList.remove('text-black');
+    btn.dataset.adjType = type;
+    document.getElementById('adj-add').dataset.active = type === 'add';
+    document.getElementById('adj-sub').dataset.active = type === 'sub';
+    document.getElementById('adj-set').dataset.active = type === 'set';
+    // Store on a hidden var
+    window._adjType = type;
+}
+
+function applyStockAdjust(sku) {
+    const adjQty  = parseInt(document.getElementById('adj-qty').value);
+    const adjType = window._adjType || 'add';
+    const item    = SKU_STOCK.find(x => x.sku === sku);
+    if (!item) return;
+    if (adjType === 'add') item.qty += adjQty;
+    else if (adjType === 'sub') item.qty = Math.max(0, item.qty - adjQty);
+    else item.qty = adjQty;
+    closeStockModal();
+    renderStockVariations();
+    renderDashboard();
+    showToast(`Estoque de ${sku} atualizado para ${item.qty} un.`, '📦');
+}
+
+function closeStockModal() {
+    document.getElementById('stockModal').classList.remove('open');
+}
+
+// ==================== VARIAÇÕES / SKU ====================
+function openVariationManager() {
+    const select = document.getElementById('parentProductSelect');
+    select.innerHTML = PRODUCTS.map(p => `<option value="${p.sku}">${p.sku} — ${p.name}</option>`).join('');
+    document.getElementById('variationManager').classList.remove('hidden');
+    // Reset selections
+    selectedSizes = []; selectedColors = [];
+    document.querySelectorAll('#sizeList .attr-chip, #colorList .attr-chip').forEach(c => c.classList.remove('selected'));
+    generateSKUs();
+}
+
+function closeVariationManager() {
+    document.getElementById('variationManager').classList.add('hidden');
+}
+
+function toggleAttr(el, type, val, code) {
+    el.classList.toggle('selected');
+    if (type === 'size') {
+        if (selectedSizes.includes(val)) selectedSizes = selectedSizes.filter(s => s !== val);
+        else selectedSizes.push(val);
+    } else {
+        const existing = selectedColors.find(c => c.name === val);
+        if (existing) selectedColors = selectedColors.filter(c => c.name !== val);
+        else selectedColors.push({ name: val, code });
+    }
+    generateSKUs();
+}
+
+function generateSKUs() {
+    const list       = document.getElementById('generatedSkusList');
+    const parentSku  = document.getElementById('parentProductSelect')?.value;
+    if (!parentSku || selectedSizes.length === 0 || selectedColors.length === 0) {
+        list.innerHTML = `<p class="text-[9px] text-gray-400 font-bold uppercase italic text-center py-16">Selecione ao menos um tamanho e uma cor para ver a matriz.</p>`;
+        return;
+    }
+    const existingSkus = SKU_STOCK.map(s => s.sku);
+    list.innerHTML = '';
+    selectedColors.forEach(color => {
+        selectedSizes.forEach(size => {
+            const uniqueSku = `${parentSku}-${color.code}-${size}`;
+            const exists    = existingSkus.includes(uniqueSku);
+            list.innerHTML += `
+                <div class="flex items-center justify-between bg-white p-3 border rounded shadow-sm text-[9px] font-black uppercase ${exists ? 'opacity-50' : ''}">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-blue-600 italic tracking-tighter text-[10px]">${uniqueSku}</span>
+                        <span class="text-gray-400 text-[8px]">${color.name} / ${size} ${exists ? '· Já existe' : ''}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-300">QTD:</span>
+                        <input type="number" id="qty-${uniqueSku}" value="10" min="0" class="w-12 border-b border-black outline-none text-center bg-transparent font-black" ${exists ? 'disabled' : ''}>
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+function updateSkuPreview() {
+    if (selectedSizes.length > 0 && selectedColors.length > 0) generateSKUs();
+}
+
+function commitGeneratedSKUs() {
+    const parentSku  = document.getElementById('parentProductSelect')?.value;
+    const product    = PRODUCTS.find(p => p.sku === parentSku);
+    const existingSkus = SKU_STOCK.map(s => s.sku);
+    let added = 0;
+    selectedColors.forEach(color => {
+        selectedSizes.forEach(size => {
+            const uniqueSku = `${parentSku}-${color.code}-${size}`;
+            if (!existingSkus.includes(uniqueSku)) {
+                const qtyInput = document.getElementById(`qty-${uniqueSku}`);
+                const qty = qtyInput ? parseInt(qtyInput.value) || 0 : 0;
+                SKU_STOCK.push({ sku: uniqueSku, product: product?.name || parentSku, variation: `${color.name} / ${size}`, qty });
+                added++;
+            }
+        });
+    });
+    closeVariationManager();
+    renderStockVariations();
+    renderDashboard();
+    showToast(`${added} SKU${added !== 1 ? 's' : ''} adicionado${added !== 1 ? 's' : ''} ao estoque!`, '✓');
+}
+
+// ==================== CARRINHO ====================
+function toggleCart() {
+    document.getElementById('cartDrawer').classList.toggle('open');
+    document.getElementById('cartOverlay').classList.toggle('open');
+}
+
+function addToCart(productId) {
+    const product  = PRODUCTS.find(p => p.id === productId);
+    if (!product) return;
+    if (product.stock === 0) { showToast('Produto esgotado!', '⚠️'); return; }
+    const existing = cart.find(item => item.id === productId);
+    if (existing) {
+        if (existing.quantity >= product.stock) { showToast('Limite de estoque atingido!', '⚠️'); return; }
+        existing.quantity += 1;
+    } else {
+        cart.push({ ...product, quantity: 1 });
+    }
+    updateCartUI();
+    showToast(`${product.name} adicionado!`, '🛒');
+    if (!document.getElementById('cartDrawer').classList.contains('open')) toggleCart();
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    updateCartUI();
+}
+
+// Remove por cartKey (suporta variações)
+function removeFromCartByKey(key) {
+    cart = cart.filter(item => (item.cartKey || String(item.id)) !== String(key));
+    updateCartUI();
+}
+
+function changeQuantity(productId, delta) {
+    const item    = cart.find(i => i.id === productId && !i.cartKey);
+    const product = PRODUCTS.find(p => p.id === productId);
+    if (!item) return;
+    item.quantity += delta;
+    if (item.quantity <= 0) removeFromCart(productId);
+    else if (item.quantity > product.stock) { item.quantity = product.stock; showToast('Limite de estoque!', '⚠️'); updateCartUI(); }
+    else updateCartUI();
+}
+
+// Altera quantidade por cartKey (suporta variações)
+function changeQuantityByKey(key, delta) {
+    const item = cart.find(i => (i.cartKey || String(i.id)) === String(key));
+    if (!item) return;
+    const skuItem = item.skuFull ? SKU_STOCK.find(s => s.sku === item.skuFull) : null;
+    const maxQty  = skuItem ? skuItem.qty : (PRODUCTS.find(p => p.id === item.id)?.stock || 99);
+    item.quantity += delta;
+    if (item.quantity <= 0) removeFromCartByKey(key);
+    else if (item.quantity > maxQty) { item.quantity = maxQty; showToast('Limite de estoque atingido!', '⚠️'); updateCartUI(); }
+    else updateCartUI();
+}
+
+function updateCartUI() {
+    const cartContainer = document.getElementById('cartItems');
+    const cartCount     = document.getElementById('cartCount');
+    const subtotalEl    = document.getElementById('cartSubtotal');
+    const totalEl       = document.getElementById('cartTotal');
+    const shippingEl    = document.getElementById('cartShipping');
+
+    if (cart.length === 0) {
+        cartContainer.innerHTML = '<div class="text-center py-20 text-gray-300 font-bold uppercase italic text-sm">O carrinho está vazio</div>';
+        cartCount.innerText = '0';
+        subtotalEl.innerText = 'R$ 0,00';
+        shippingEl.innerText = 'Grátis';
+        totalEl.innerText = 'R$ 0,00';
+        return;
+    }
+
+    let subtotal = 0, count = 0;
+    cartContainer.innerHTML = cart.map(item => {
+        subtotal += item.price * item.quantity;
+        count    += item.quantity;
+        const key = item.cartKey || String(item.id);
+        return `
+            <div class="flex gap-4 border-b pb-5">
+                <div class="w-20 h-24 bg-gray-100 flex-shrink-0 flex items-center justify-center text-[8px] font-black text-gray-300 uppercase text-center p-2">[IMG]</div>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-[11px] font-black uppercase italic font-display">${item.name}</h4>
+                        ${item.variation ? `<p class="text-[10px] text-blue-600 font-bold uppercase">${item.variation}</p>` : ''}
+                        <p class="text-[9px] text-gray-300 font-bold uppercase">${item.skuFull || item.sku}</p>
+                        <p class="text-blue-600 font-black text-sm mt-1">R$ ${item.price.toFixed(2)}</p>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <div class="flex border items-center">
+                            <button onclick="changeQuantityByKey('${key}',-1)" class="px-2.5 py-1 text-sm font-black hover:bg-gray-50">−</button>
+                            <span class="px-3 text-xs font-black border-x">${item.quantity}</span>
+                            <button onclick="changeQuantityByKey('${key}',1)" class="px-2.5 py-1 text-sm font-black hover:bg-gray-50">+</button>
+                        </div>
+                        <button onclick="removeFromCartByKey('${key}')" class="text-[9px] font-black uppercase text-red-400 hover:text-red-600 transition">Remover</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const shipping = subtotal >= 300 ? 0 : 19.90;
+    cartCount.innerText  = count;
+    subtotalEl.innerText = `R$ ${subtotal.toFixed(2)}`;
+    shippingEl.innerText = shipping === 0 ? 'Grátis 🎉' : `R$ ${shipping.toFixed(2)}`;
+    totalEl.innerText    = `R$ ${(subtotal + shipping).toFixed(2)}`;
+}
+
+// ==================== FILTROS LOJA ====================
+function applyFilters() {
+    const grid       = document.getElementById('productGrid');
+    const noRes      = document.getElementById('noResults');
+    const sortBy     = document.getElementById('sortSelector').value;
+    const searchVal  = (document.getElementById('searchInput')?.value || document.getElementById('searchInputMobile')?.value || '').toLowerCase();
+
+    let filtered = PRODUCTS.filter(p => {
+        const matchCat   = currentCategory === 'all' || p.cat === currentCategory;
+        const matchPrice = p.price <= currentMaxPrice;
+        const matchSearch = !searchVal || p.name.toLowerCase().includes(searchVal) || p.sku.toLowerCase().includes(searchVal);
+        return matchCat && matchPrice && matchSearch;
+    });
+
+    if (sortBy === 'low')  filtered.sort((a,b) => a.price - b.price);
+    if (sortBy === 'high') filtered.sort((a,b) => b.price - a.price);
+    if (sortBy === 'new')  filtered.sort((a,b) => b.isNew - a.isNew);
+
+    grid.innerHTML = '';
+    if (filtered.length === 0) {
+        noRes.classList.remove('hidden');
+    } else {
+        noRes.classList.add('hidden');
+        filtered.forEach(p => {
+            const outOfStock = p.stock === 0;
+            grid.innerHTML += `
+                <div class="product-card group cursor-pointer">
+                    <div class="aspect-[3/4] bg-gray-100 relative mb-4 flex items-center justify-center text-gray-300 font-bold italic uppercase text-[10px] overflow-hidden" onclick="openProductModal(${p.id})">
+                        <span>[IMG_${p.sku}]</span>
+                        <div class="product-img-overlay absolute inset-0 bg-black/5 flex items-end pb-4 justify-center">
+                            <span class="text-[9px] font-black uppercase bg-white px-3 py-1 text-black shadow">Ver Detalhes</span>
+                        </div>
+                        ${p.isNew ? '<span class="absolute top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2 py-1 uppercase italic">Novo</span>' : ''}
+                        ${outOfStock ? '<span class="absolute top-3 right-3 bg-black text-white text-[9px] font-black px-2 py-1 uppercase">Esgotado</span>' : ''}
+                        ${!outOfStock && p.stock <= 3 ? '<span class="absolute top-3 right-3 bg-yellow-400 text-black text-[9px] font-black px-2 py-1 uppercase">Últimas Un.</span>' : ''}
+                    </div>
+                    <div class="px-1">
+                        <p class="text-[9px] font-black uppercase text-gray-300 tracking-widest mb-0.5">${p.cat}</p>
+                        <h4 class="font-black text-sm uppercase italic font-display leading-tight">${p.name}</h4>
+                        <p class="text-blue-600 font-black text-lg font-display mt-0.5">R$ ${p.price.toFixed(2)}</p>
+                        <button onclick="${outOfStock ? `showToast('Produto esgotado!','⚠️')` : `addToCart(${p.id})`}" class="w-full mt-3 ${outOfStock ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-black text-white hover:bg-blue-600'} py-3 font-black text-[10px] uppercase transition tracking-widest">
+                            ${outOfStock ? 'Indisponível' : 'Adicionar ao Carrinho'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    document.getElementById('productCountLabel').innerText = `${filtered.length} ${filtered.length === 1 ? 'item listado' : 'itens listados'}`;
+}
+
+function updatePriceFilter(val) {
+    currentMaxPrice = parseInt(val);
+    document.getElementById('priceLabel').innerText = `R$ ${val}${val == 500 ? '+' : ''}`;
+    applyFilters();
+}
+
+function filterByCategory(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        const isActive = btn.dataset.cat === cat;
+        btn.classList.toggle('category-btn-active', isActive);
+        btn.classList.toggle('text-gray-400', !isActive);
+    });
+    applyFilters();
+}
+
+// ==================== ADMIN RENDER ====================
+function renderAdminProducts() {
+    const tbody     = document.getElementById('adminProductTable');
+    const search    = (document.getElementById('adminSearch')?.value || '').toLowerCase();
+    const catFilter = document.getElementById('adminCatFilter')?.value || 'all';
+    let filtered    = PRODUCTS.filter(p => {
+        const matchCat  = catFilter === 'all' || p.cat === catFilter;
+        const matchSearch = !search || p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+        return matchCat && matchSearch;
+    });
+    tbody.innerHTML = filtered.map(p => `
+        <tr class="border-b table-row-hover transition ${p.stock === 0 ? 'bg-red-50' : ''}">
+            <td class="p-4 text-gray-400 italic">${p.sku}</td>
+            <td class="p-4 font-black italic">${p.name}</td>
+            <td class="p-4 capitalize text-gray-400">${p.cat}</td>
+            <td class="p-4 font-black">R$ ${p.price.toFixed(2)}</td>
+            <td class="p-4 font-black ${p.stock === 0 ? 'text-red-500' : p.stock <= 3 ? 'text-yellow-500' : 'text-green-600'}">${p.stock} un.</td>
+            <td class="p-4"><span class="status-pill ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.stock > 0 ? 'Ativo' : 'Esgotado'}</span></td>
+            <td class="p-4 text-right">
+                <button onclick="openEditProduct(${p.id})" class="text-blue-600 font-black uppercase text-[10px] mr-3">Editar</button>
+                <button onclick="deleteProduct(${p.id})" class="text-red-400 font-black uppercase text-[10px] hover:text-red-600">Excluir</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deleteProduct(productId) {
+    const p = PRODUCTS.find(x => x.id === productId);
+    if (!p) return;
+    PRODUCTS = PRODUCTS.filter(x => x.id !== productId);
+    renderAdminProducts();
+    renderDashboard();
+    showToast(`${p.name} removido!`, '🗑️');
+}
+
+function renderStockVariations() {
+    const tbody = document.getElementById('adminStockTable');
+    let data    = [...SKU_STOCK];
+    if (stockFilter === 'low')  data = data.filter(s => s.qty > 0 && s.qty <= 3);
+    if (stockFilter === 'out')  data = data.filter(s => s.qty === 0);
+
+    if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400 text-xs font-bold uppercase italic">Nenhum SKU encontrado para este filtro.</td></tr>`;
+        return;
+    }
+
+    // Group by product
+    const groups = {};
+    data.forEach(s => {
+        if (!groups[s.product]) groups[s.product] = [];
+        groups[s.product].push(s);
+    });
+
+    tbody.innerHTML = '';
+    Object.entries(groups).forEach(([product, items]) => {
+        tbody.innerHTML += `<tr class="bg-gray-50 border-b"><td colspan="6" class="px-4 py-2 text-[9px] text-gray-400 italic font-bold uppercase">${product}</td></tr>`;
+        items.forEach(s => {
+            const isLow = s.qty > 0 && s.qty <= 3;
+            const isOut = s.qty === 0;
+            tbody.innerHTML += `
+                <tr class="border-b table-row-hover ${isOut ? 'low-stock' : ''}">
+                    <td class="p-4 italic text-gray-400 text-[10px]">${s.sku}</td>
+                    <td class="p-4 italic font-black text-[11px]">${s.product}</td>
+                    <td class="p-4 text-gray-400 text-[10px]">${s.variation}</td>
+                    <td class="p-4 text-center font-black text-base font-display ${isOut ? 'text-red-500' : isLow ? 'text-yellow-500' : 'text-green-600'}">${s.qty}</td>
+                    <td class="p-4 text-center"><span class="status-pill ${isOut ? 'bg-red-100 text-red-700' : isLow ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}">${isOut ? 'Esgotado' : isLow ? 'Baixo' : 'OK'}</span></td>
+                    <td class="p-4 text-right"><button onclick="openStockModal('${s.sku}')" class="text-blue-600 font-black uppercase text-[10px]">Ajustar</button></td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function filterStock(type) {
+    stockFilter = type;
+    document.querySelectorAll('.stock-filter-btn').forEach(b => {
+        const isActive = b.id === `sf-${type}`;
+        b.classList.toggle('bg-black', isActive);
+        b.classList.toggle('text-white', isActive);
+        b.classList.toggle('text-black', !isActive);
+    });
+    renderStockVariations();
+}
+
+function renderDashboard() {
+    const active  = PRODUCTS.filter(p => p.stock > 0).length;
+    const out     = PRODUCTS.filter(p => p.stock === 0).length;
+    const low     = PRODUCTS.filter(p => p.stock > 0 && p.stock <= 3).length;
+    const skuCount = SKU_STOCK.length;
+
+    document.getElementById('kpi-active').textContent = active;
+    document.getElementById('kpi-out').textContent    = out;
+    document.getElementById('kpi-low').textContent    = low;
+    document.getElementById('kpi-skus').textContent   = skuCount;
+
+    // Alerts
+    const alertsEl = document.getElementById('dashboardAlerts');
+    const alerts   = [...PRODUCTS.filter(p => p.stock > 0 && p.stock <= 3).map(p => ({ label: `${p.name} (${p.sku})`, qty: p.stock, type: 'low' })),
+                      ...SKU_STOCK.filter(s => s.qty === 0).map(s => ({ label: `SKU: ${s.sku} — ${s.variation}`, qty: 0, type: 'out' }))];
+    if (alerts.length === 0) {
+        alertsEl.innerHTML = `<p class="text-[11px] text-green-600 font-bold uppercase italic py-2 px-2">✓ Nenhum alerta de estoque.</p>`;
+    } else {
+        alertsEl.innerHTML = alerts.map(a => `
+            <div class="flex items-center justify-between px-3 py-2 rounded border ${a.type === 'out' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}">
+                <span class="text-[11px] font-bold italic">${a.label}</span>
+                <span class="status-pill ${a.type === 'out' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}">${a.type === 'out' ? 'Esgotado' : `${a.qty} un.`}</span>
+            </div>
+        `).join('');
+    }
+
+    // Product list
+    const listEl = document.getElementById('dashboardProductList');
+    listEl.innerHTML = PRODUCTS.slice(0,5).map(p => `
+        <div class="px-5 py-3 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-black uppercase italic font-display">${p.name}</p>
+                <p class="text-[9px] text-gray-400 font-bold uppercase">${p.sku} · ${p.cat}</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="font-black text-sm font-display text-blue-600">R$ ${p.price.toFixed(2)}</span>
+                <span class="status-pill ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.stock > 0 ? `${p.stock} un.` : 'Esgotado'}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderAdminOrders() {
+    const tbody = document.getElementById('adminOrderTable');
+    tbody.innerHTML = ORDERS.map(o => {
+        const statusColors = {
+            'Entregue': 'bg-green-100 text-green-700',
+            'Em Trânsito': 'bg-blue-100 text-blue-700',
+            'Processando': 'bg-yellow-100 text-yellow-700',
+            'Aguard. Pagto': 'bg-gray-100 text-gray-500',
+        };
+        return `
+            <tr class="border-b table-row-hover">
+                <td class="p-4 italic text-gray-400 font-black">${o.id}</td>
+                <td class="p-4 italic font-black">${o.client}</td>
+                <td class="p-4 text-gray-400">${o.date}</td>
+                <td class="p-4">${o.items} ${o.items === 1 ? 'item' : 'itens'}</td>
+                <td class="p-4 font-black text-green-600">R$ ${o.total.toFixed(2)}</td>
+                <td class="p-4"><span class="status-pill ${statusColors[o.status] || 'bg-gray-100 text-gray-500'}">${o.status}</span></td>
+                <td class="p-4 text-right"><button onclick="showToast('Detalhes do pedido em breve!','📦')" class="text-blue-600 font-black text-[10px] uppercase">Ver</button></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ==================== NAVEGAÇÃO ====================
+function switchView(view) {
+    document.getElementById('storeView').classList.toggle('hidden', view !== 'store');
+    document.getElementById('adminView').classList.toggle('hidden', view !== 'admin');
+    document.getElementById('store-nav-links').classList.toggle('hidden', view === 'admin');
+    document.getElementById('store-search-bar').classList.toggle('hidden', view === 'admin');
+    if (view === 'admin') {
+        showAdminSection('sec-produtos');
+        renderAdminProducts();
+        renderDashboard();
+        renderAdminOrders();
+    } else {
+        applyFilters();
+    }
+}
+
+function goToStoreHome() {
+    document.getElementById('catalog-section').classList.remove('hidden');
+    document.getElementById('customer-profile-section').classList.add('hidden');
+    applyFilters();
+}
+
+function showCustomerSection(section) {
+    if (section === 'profile') {
+        document.getElementById('catalog-section').classList.add('hidden');
+        document.getElementById('customer-profile-section').classList.remove('hidden');
+        switchProfileTab('personal-data');
+    }
+}
+
+function switchProfileTab(tabId) {
+    document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.add('hidden'));
+    document.querySelectorAll('.profile-tab').forEach(t => {
+        t.classList.remove('profile-menu-active');
+        t.classList.add('text-gray-400');
+    });
+    document.getElementById('content-' + tabId).classList.remove('hidden');
+    document.getElementById('tab-' + tabId).classList.add('profile-menu-active');
+    document.getElementById('tab-' + tabId).classList.remove('text-gray-400');
+}
+
+function showAdminSection(id) {
+    document.querySelectorAll('.admin-content-section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.admin-nav-item').forEach(i => {
+        i.classList.remove('admin-menu-active');
+        i.classList.add('text-gray-500');
+        i.classList.remove('bg-white');
+    });
+    document.getElementById(id).classList.remove('hidden');
+    const btn = document.getElementById('btn-' + id);
+    if (btn) {
+        btn.classList.add('admin-menu-active');
+        btn.classList.remove('text-gray-500');
+    }
+    if (id === 'sec-estoque')  renderStockVariations();
+    if (id === 'sec-produtos') renderAdminProducts();
+    if (id === 'sec-dashboard') renderDashboard();
+    if (id === 'sec-pedidos')  renderAdminOrders();
+}
+
+// Close modals on overlay click
+document.getElementById('productModal').addEventListener('click', function(e) {
+    if (e.target === this) closeProductModal();
+});
+document.getElementById('editProductModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+document.getElementById('stockModal').addEventListener('click', function(e) {
+    if (e.target === this) closeStockModal();
+});
+
+// ==================== INIT ====================
+window._adjType = 'add';
+window.onload = () => {
+    applyFilters();
+    updateCartUI();
+};
+</script>
+</body>
+</html>
