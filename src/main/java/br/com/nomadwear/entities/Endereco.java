@@ -10,8 +10,9 @@ public class Endereco {
     private String cidade;
     private String linha1; // Rua e número
     private String linha2; // Complemento
+    private String observacoes;
 
-    public Endereco(String pais, String codigoPostal, String subdivisao, String cidade, String linha1, String linha2) {
+    public Endereco(String pais, String codigoPostal, String subdivisao, String cidade, String linha1, String linha2, String observacoes) {
         this.id = UUID.randomUUID();
         this.pais = pais;
         this.codigoPostal = codigoPostal;
@@ -19,6 +20,7 @@ public class Endereco {
         this.cidade = cidade;
         this.linha1 = linha1;
         this.linha2 = linha2;
+        this.observacoes = observacoes;
     }
 
     // Getters e Setters
@@ -43,6 +45,7 @@ public class Endereco {
     public String getLinha2() {
         return linha2;
     }
+    public String getObservacoes() { return observacoes; }
     public void setPais(String pais) {
         this.pais = pais;
     }
@@ -61,5 +64,6 @@ public class Endereco {
     public void setLinha2(String linha2) {
         this.linha2 = linha2;
     }
+    public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
     
 }
