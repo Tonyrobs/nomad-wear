@@ -1,3 +1,7 @@
+package br.com.nomadwear.entities;
+
+import br.com.nomadwear.entities.enums.BandeiraCartao;
+
 import java.time.YearMonth;
 import java.util.UUID;
 
@@ -7,7 +11,7 @@ public class CartaoCredito {
     private String nomeTitular;
     private YearMonth dataValidade;
     private String codigoSeguranca;
-    private BandeiraCartao bandeira;    
+    private BandeiraCartao bandeira;
        
     public CartaoCredito(String numeroCartao, String nomeTitular, YearMonth dataValidade, String codigoSeguranca, BandeiraCartao bandeira, String cpfTitular) {
         this.id = UUID.randomUUID();

@@ -1,3 +1,5 @@
+package br.com.nomadwear.entities.enums;
+
 public enum BandeiraCartao {
     VISA("Visa"),
     MASTERCARD("Mastercard"),

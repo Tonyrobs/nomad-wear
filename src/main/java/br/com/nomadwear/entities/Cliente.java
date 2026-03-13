@@ -1,10 +1,11 @@
 package br.com.nomadwear.entities;
 
+import br.com.nomadwear.entities.enums.Genero;
 import java.time.LocalDate;
 
 public class Cliente {
     private String nome;
-    private String genero;
+    private Genero genero;
     private LocalDate dataNascimento;
     private String cpf;
 

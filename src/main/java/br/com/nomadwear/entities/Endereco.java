@@ -1,3 +1,5 @@
+package br.com.nomadwear.entities;
+
 import java.util.UUID;
 
 public class Endereco {
