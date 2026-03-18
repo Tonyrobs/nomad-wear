@@ -1,8 +1,16 @@
 package br.com.nomadwear.entities;
 
+import jakarta.persistence.*;
+
 import java.util.UUID;
 
+@Entity
+@Table(name = "telefone")
+
 public class Telefone {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+
     private final UUID id;
     private String ddd;
     private String numero;

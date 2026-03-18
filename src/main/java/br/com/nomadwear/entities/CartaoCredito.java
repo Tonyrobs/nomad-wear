@@ -1,11 +1,18 @@
 package br.com.nomadwear.entities;
 
 import br.com.nomadwear.entities.enums.BandeiraCartao;
+import jakarta.persistence.*;
 
 import java.time.YearMonth;
 import java.util.UUID;
 
+@Entity
+@Table(name = "cartao_credito")
+
 public class CartaoCredito {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+
     private final UUID id;
     private String numeroCartao;
     private String nomeTitular;

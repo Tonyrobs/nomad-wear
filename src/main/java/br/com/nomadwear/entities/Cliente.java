@@ -1,13 +1,20 @@
 package br.com.nomadwear.entities;
 
 import br.com.nomadwear.entities.enums.Genero;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
 
+@Entity
+@Table(name = "cliente")
+
 public class Cliente {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+
     private final UUID id;
     private String nome;
     private Genero genero;
@@ -17,8 +24,16 @@ public class Cliente {
     private String senha;
     private boolean ativo;
 
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = Endereco.class)
+    @JoinColumn(name = "endereco_id")
     private List<Endereco> enderecos = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = Telefone.class)
+    @JoinColumn(name = "cliente_id")
     private List<Telefone> telefones = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = CartaoCredito.class)
+    @JoinColumn(name = "cliente_id")
     private List<CartaoCredito> cartoes = new ArrayList<>();
 
     public Cliente(String nome, Genero genero, LocalDate dataNascimento, String cpf, String email, String senha, boolean ativo) {

@@ -1,8 +1,15 @@
 package br.com.nomadwear.entities;
 
+import jakarta.persistence.*;
+
 import java.util.UUID;
 
+@Entity
+@Table(name = "endereco")
 public class Endereco {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+
     private final UUID id;
     private String pais;
     private String codigoPostal;
