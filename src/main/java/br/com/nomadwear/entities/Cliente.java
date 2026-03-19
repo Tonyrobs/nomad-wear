@@ -15,7 +15,7 @@ public class Cliente {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
 
-    private final UUID id;
+    private UUID id;
     private String nome;
     private Genero genero;
     private LocalDate dataNascimento;
@@ -35,6 +35,9 @@ public class Cliente {
     @OneToMany(cascade = CascadeType.ALL, targetEntity = CartaoCredito.class)
     @JoinColumn(name = "cliente_id")
     private List<CartaoCredito> cartoes = new ArrayList<>();
+
+    public Cliente(){
+    }
 
     public Cliente(String nome, Genero genero, LocalDate dataNascimento, String cpf, String email, String senha, boolean ativo) {
         this.id = UUID.randomUUID();
