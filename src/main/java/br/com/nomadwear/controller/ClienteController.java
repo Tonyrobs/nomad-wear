@@ -2,6 +2,7 @@ package br.com.nomadwear.controller;
 
 import br.com.nomadwear.entities.Cliente;
 import br.com.nomadwear.repository.ClienteRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +20,7 @@ public class ClienteController {
     }
 
     @PostMapping
-    public ResponseEntity<?> cadastrar(@RequestBody Cliente cliente) {
-
+    public ResponseEntity<?> cadastrar(@Valid @RequestBody Cliente cliente) {
         if (clienteRepository.existsByCpf(cliente.getCpf())) {
             return ResponseEntity.badRequest().body("CPF já cadastrado!");
         }
@@ -35,23 +35,31 @@ public class ClienteController {
     }
 
     @GetMapping
-    public List<Cliente> listarClientes() {
-        return clienteRepository.findAll();
+    public ResponseEntity<List<Cliente>> listarClientes() {
+        return ResponseEntity.ok(clienteRepository.findAll());
     }
 
     @GetMapping("/{id}")
-    public Cliente buscarPorId(@PathVariable UUID id) {
-        return clienteRepository.findById(id).orElse(null);
+    public ResponseEntity<Cliente> buscarPorId(@PathVariable UUID id) {
+        Cliente cliente = clienteRepository.findById(id).orElse(null);
+
+        if (cliente != null) {
+            return ResponseEntity.ok(cliente);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public void deletar(@PathVariable UUID id) {
-        clienteRepository.deleteById(id);
+    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
+        if (clienteRepository.existsById(id)) {
+            clienteRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build(); //retorna erro 404
     }
 
     @PutMapping("/{id}")
-    public Cliente atualizar(@PathVariable java.util.UUID id, @RequestBody Cliente clienteAtualizado) {
-
+    public ResponseEntity<Cliente> atualizar(@PathVariable UUID id, @RequestBody Cliente clienteAtualizado) {
         Cliente clienteExistente = clienteRepository.findById(id).orElse(null);
 
         if (clienteExistente != null) {
@@ -60,9 +68,10 @@ public class ClienteController {
             clienteExistente.setEmail(clienteAtualizado.getEmail());
             clienteExistente.setSenha(clienteAtualizado.getSenha());
 
-            return clienteRepository.save(clienteExistente);
+            Cliente salvo = clienteRepository.save(clienteExistente);
+            return ResponseEntity.ok(salvo); //retorna 200 OK
         }
 
-        return null;
+        return ResponseEntity.notFound().build(); //retorna erro 404
     }
 }

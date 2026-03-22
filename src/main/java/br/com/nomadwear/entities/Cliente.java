@@ -1,7 +1,9 @@
 package br.com.nomadwear.entities;
 
 import br.com.nomadwear.entities.enums.Genero;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,11 +18,22 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.UUID)
 
     private UUID id;
+
+    @NotBlank(message = "O nome é obrigatório")
     private String nome;
     private Genero genero;
     private LocalDate dataNascimento;
+
+    @NotBlank(message = "O CPF é obrigatório")
+    @org.hibernate.validator.constraints.br.CPF(message = "CPF em formato inválido")
     private String cpf;
+
+    @NotBlank(message = "O e-mail é obrigatório")
+    @Email(message = "E-mail em formato inválido")
     private String email;
+
+    @NotBlank(message = "A senha é obrigatória")
+    @com.fasterxml.jackson.annotation.JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
     private boolean ativo;
 
