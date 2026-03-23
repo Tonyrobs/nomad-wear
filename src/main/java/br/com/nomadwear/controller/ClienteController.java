@@ -1,77 +1,64 @@
 package br.com.nomadwear.controller;
 
-import br.com.nomadwear.entities.Cliente;
-import br.com.nomadwear.repository.ClienteRepository;
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.nomadwear.entities.Cliente;
+import br.com.nomadwear.service.ClienteService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/clientes")
 public class ClienteController {
 
-    private final ClienteRepository clienteRepository;
+    private final ClienteService clienteService;
 
-    public ClienteController(ClienteRepository clienteRepository) {
-        this.clienteRepository = clienteRepository;
+    public ClienteController(ClienteService clienteService) {
+        this.clienteService = clienteService;
     }
 
     @PostMapping
-    public ResponseEntity<?> cadastrar(@Valid @RequestBody Cliente cliente) {
-        if (clienteRepository.existsByCpf(cliente.getCpf())) {
-            return ResponseEntity.badRequest().body("CPF já cadastrado!");
-        }
-
-        if (clienteRepository.existsByEmail(cliente.getEmail())) {
-            return ResponseEntity.badRequest().body("E-mail já cadastrado!");
-        }
-
-        cliente.setAtivo(true);
-        Cliente salvo = clienteRepository.save(cliente);
+    public ResponseEntity<Cliente> cadastrar(@Valid @RequestBody Cliente cliente) {
+        Cliente salvo = clienteService.cadastrar(cliente);
         return ResponseEntity.ok(salvo);
     }
 
     @GetMapping
     public ResponseEntity<List<Cliente>> listarClientes() {
-        return ResponseEntity.ok(clienteRepository.findAll());
+        return ResponseEntity.ok(clienteService.listarTodos());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Cliente> buscarPorId(@PathVariable UUID id) {
-        Cliente cliente = clienteRepository.findById(id).orElse(null);
-
-        if (cliente != null) {
-            return ResponseEntity.ok(cliente);
-        }
-        return ResponseEntity.notFound().build();
+        Cliente cliente = clienteService.buscarPorId(id);
+        return ResponseEntity.ok(cliente);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
-        if (clienteRepository.existsById(id)) {
-            clienteRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build(); //retorna erro 404
+        clienteService.deletar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> atualizar(@PathVariable UUID id, @RequestBody Cliente clienteAtualizado) {
-        Cliente clienteExistente = clienteRepository.findById(id).orElse(null);
+    public ResponseEntity<Cliente> atualizar(@PathVariable UUID id, @Valid @RequestBody Cliente clienteAtualizado) {
+        Cliente salvo = clienteService.atualizar(id, clienteAtualizado);
+        return ResponseEntity.ok(salvo);
+    }
 
-        if (clienteExistente != null) {
-            clienteExistente.setNome(clienteAtualizado.getNome());
-            clienteExistente.setCpf(clienteAtualizado.getCpf());
-            clienteExistente.setEmail(clienteAtualizado.getEmail());
-            clienteExistente.setSenha(clienteAtualizado.getSenha());
-
-            Cliente salvo = clienteRepository.save(clienteExistente);
-            return ResponseEntity.ok(salvo); //retorna 200 OK
-        }
-
-        return ResponseEntity.notFound().build(); //retorna erro 404
+    @PutMapping("/{id}/ativar")
+    public ResponseEntity<Void> ativar(@PathVariable UUID id) {
+        clienteService.ativar(id);
+        return ResponseEntity.noContent().build();
     }
 }

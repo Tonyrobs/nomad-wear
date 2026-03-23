@@ -1,8 +1,13 @@
 package br.com.nomadwear.entities;
 
-import jakarta.persistence.*;
-
 import java.util.UUID;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "endereco")
@@ -10,67 +15,113 @@ public class Endereco {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
 
-    private final UUID id;
+    private UUID id;
+    @NotBlank(message = "País é obrigatório")
     private String pais;
-    private String codigoPostal;
-    private String subdivisao; // Estado ou província
+    @NotBlank(message = "CEP é obrigatório")
+    private String cep;
+    @NotBlank(message = "Estado é obrigatório")
+    private String estado; // Estado ou província
+    @NotBlank(message = "Cidade é obrigatória")
     private String cidade;
-    private String linha1; // Rua e número
-    private String linha2; // Complemento
+    @NotBlank(message = "Rua é obrigatória")
+    private String rua; // Rua
+    @NotBlank(message = "Número é obrigatório")
+    private String numero; // Número  
+    @NotBlank(message = "Bairro é obrigatório")
+    private String bairro; // Bairro 
+    private String complemento; // Complemento
     private String observacoes;
 
-    public Endereco(String pais, String codigoPostal, String subdivisao, String cidade, String linha1, String linha2, String observacoes) {
+    public Endereco() {
+    }
+
+    public Endereco(String pais, String cep, String estado, String cidade, String rua, String numero, String bairro, String complemento, String observacoes) {
         this.id = UUID.randomUUID();
         this.pais = pais;
-        this.codigoPostal = codigoPostal;
-        this.subdivisao = subdivisao;
+        this.cep = cep;
+        this.estado = estado;
         this.cidade = cidade;
-        this.linha1 = linha1;
-        this.linha2 = linha2;
+        this.rua = rua;
+        this.numero = numero;
+        this.bairro = bairro;
+        this.complemento = complemento;
         this.observacoes = observacoes;
     }
 
-    // Getters e Setters
     public UUID getId() {
         return id;
     }
+
     public String getPais() {
         return pais;
     }
-    public String getCodigoPostal() {
-        return codigoPostal;
+
+    public String getCep() {
+        return cep;
     }
-    public String getSubdivisao() {
-        return subdivisao;
+
+    public String getEstado() {
+        return estado;
     }
+
     public String getCidade() {
         return cidade;
     }
-    public String getLinha1() {
-        return linha1;
+
+    public String getRua() {
+        return rua;
     }
-    public String getLinha2() {
-        return linha2;
+
+    public String getNumero() {
+        return numero;
     }
-    public String getObservacoes() { return observacoes; }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public String getObservacoes() {
+        return observacoes;
+    }
+
     public void setPais(String pais) {
         this.pais = pais;
     }
-    public void setCodigoPostal(String codigoPostal) {
-        this.codigoPostal = codigoPostal;
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
-    public void setSubdivisao(String subdivisao) {
-        this.subdivisao = subdivisao;
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
+
     public void setCidade(String cidade) {
         this.cidade = cidade;
     }
-    public void setLinha1(String linha1) {
-        this.linha1 = linha1;
+
+    public void setRua(String rua) {
+        this.rua = rua;
     }
-    public void setLinha2(String linha2) {
-        this.linha2 = linha2;
+
+    public void setNumero(String numero) {
+        this.numero = numero;
     }
-    public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
-    
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    public void setObservacoes(String observacoes) {
+        this.observacoes = observacoes;
+    }
 }

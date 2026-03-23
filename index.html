@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NomadWear - Moda para Viajantes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header com Toggle Cliente/Admin -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <h1>🧳 NomadWear</h1>
+                <p class="tagline">Moda para Viajantes</p>
+            </div>
+            <nav class="nav-toggle">
+                <button class="toggle-btn active" data-view="cliente">
+                    👤 Cliente
+                </button>
+                <button class="toggle-btn" data-view="admin">
+                    ⚙️ Admin
+                </button>
+            </nav>
+            <div class="user-menu">
+                <span id="userDisplay" class="user-display">Não autenticado</span>
+                <button id="logoutBtn" class="btn btn-logout" style="display:none;">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- =====================================================================
+                                    VISÃO CLIENTE
+             ===================================================================== -->
+        <section id="viewCliente" class="view-container">
+            <!-- Login & Cadastro -->
+            <div id="authSection" class="auth-section">
+                <div class="auth-container">
+                    <div class="auth-card">
+                        <h2>Bem-vindo ao NomadWear</h2>
+                        <p>Faça login ou crie uma conta para continuar</p>
+                        
+                        <form id="loginForm" class="form-auth">
+                            <h3>Login</h3>
+                            <input type="email" name="email" placeholder="E-mail" required>
+                            <input type="password" name="senha" placeholder="Senha" required>
+                            <button type="submit" class="btn btn-primary">Entrar</button>
+                        </form>
+
+                        <div class="divider">ou</div>
+
+                        <form id="registerForm" class="form-auth">
+                            <h3>Criar Conta</h3>
+                            <input type="text" name="nome" placeholder="Nome completo" required>
+                            <input type="email" name="email" placeholder="E-mail" required>
+                            <input type="password" name="senha" placeholder="Senha" required>
+                            <input type="text" name="cpf" placeholder="CPF (000.000.000-00)" required>
+                            <input type="date" name="dataNascimento" placeholder="Data de nascimento" required>
+                            <select name="genero" required>
+                                <option value="">Selecione o gênero</option>
+                                <option value="MASCULINO">Masculino</option>
+                                <option value="FEMININO">Feminino</option>
+                                <option value="OUTRO">Outro</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Cadastrar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Cliente (após autenticação) -->
+            <div id="dashboardCliente" class="dashboard-cliente" style="display:none;">
+                <!-- Abas de navegação -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="minha-conta">👤 Minha Conta</button>
+                    <button class="tab-btn" data-tab="enderecos">📍 Endereços</button>
+                    <button class="tab-btn" data-tab="cartoes">💳 Cartões</button>
+                    <button class="tab-btn" data-tab="loja">🛍️ Loja</button>
+                    <button class="tab-btn" data-tab="carrinho">🛒 Carrinho</button>
+                </div>
+
+                <!-- ABA 1: Minha Conta -->
+                <div id="tabMinhaConta" class="tab-content active">
+                    <div class="content-card">
+                        <h2>Meus Dados Pessoais</h2>
+                        <form id="formClienteDados" class="form-grid-2">
+                            <div class="form-group">
+                                <label for="nome">Nome</label>
+                                <input type="text" id="nome" name="nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">E-mail</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cpf">CPF</label>
+                                <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="genero">Gênero</label>
+                                <select id="genero" name="genero" required>
+                                    <option value="">Selecione</option>
+                                    <option value="MASCULINO">Masculino</option>
+                                    <option value="FEMININO">Feminino</option>
+                                    <option value="OUTRO">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="dataNascimento">Data de Nascimento</label>
+                                <input type="date" id="dataNascimento" name="dataNascimento" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                            </div>
+                        </form>
+                        <div id="messageContainer" class="message-container"></div>
+                    </div>
+                </div>
+
+                <!-- ABA 2: Endereços -->
+                <div id="tabEnderecos" class="tab-content">
+                    <div class="content-card">
+                        <h2>Meus Endereços</h2>
+                        <button class="btn btn-primary" id="btnNovoEndereco">+ Novo Endereço</button>
+                        
+                        <div id="formNovoEndereco" class="form-container" style="display:none;">
+                            <form id="formEndereco" class="form-grid-2">
+                                <input type="hidden" id="enderecoId" name="id">
+                                <div class="form-group">
+                                    <label for="pais">País</label>
+                                    <input type="text" id="pais" name="pais" value="Brasil" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cep">CEP</label>
+                                    <input type="text" id="cep" name="cep" placeholder="00000-000" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="estado">Estado</label>
+                                    <input type="text" id="estado" name="estado" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cidade">Cidade</label>
+                                    <input type="text" id="cidade" name="cidade" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="bairro">Bairro</label>
+                                    <input type="text" id="bairro" name="bairro" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rua">Rua</label>
+                                    <input type="text" id="rua" name="rua" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="numero">Número</label>
+                                    <input type="text" id="numero" name="numero" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="complemento">Complemento</label>
+                                    <input type="text" id="complemento" name="complemento">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="observacoes">Observações</label>
+                                    <textarea id="observacoes" name="observacoes" rows="2"></textarea>
+                                </div>
+                                <div class="form-group full-width form-actions">
+                                    <button type="submit" class="btn btn-primary">Salvar Endereço</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelarEndereco">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div id="listaEnderecos" class="lista-items">
+                            <!-- Endereços carregados via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 3: Cartões de Crédito -->
+                <div id="tabCartoes" class="tab-content">
+                    <div class="content-card">
+                        <h2>Meus Cartões de Crédito</h2>
+                        <button class="btn btn-primary" id="btnNovoCartao">+ Novo Cartão</button>
+                        
+                        <div id="formNovoCartao" class="form-container" style="display:none;">
+                            <form id="formCartao" class="form-grid-2">
+                                <input type="hidden" id="cartaoId" name="id">
+                                <div class="form-group full-width">
+                                    <label for="numeroCartao">Número do Cartão</label>
+                                    <input type="text" id="numeroCartao" name="numeroCartao" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="nomeTitular">Nome do Titular</label>
+                                    <input type="text" id="nomeTitular" name="nomeTitular" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="bandeira">Bandeira</label>
+                                    <select id="bandeira" name="bandeira" required>
+                                        <option value="">Selecione</option>
+                                        <option value="VISA">Visa</option>
+                                        <option value="MASTERCARD">Mastercard</option>
+                                        <option value="AMERICAN_EXPRESS">American Express</option>
+                                        <option value="ELO">Elo</option>
+                                        <option value="HIPERCARD">Hipercard</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dataValidade">Validade (MM/YY)</label>
+                                    <input type="text" id="dataValidade" name="dataValidade" placeholder="12/25" maxlength="5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="codigoSeguranca">Código de Segurança</label>
+                                    <input type="text" id="codigoSeguranca" name="codigoSeguranca" placeholder="CVV" maxlength="4" required>
+                                </div>
+                                <div class="form-group full-width form-actions">
+                                    <button type="submit" class="btn btn-primary">Salvar Cartão</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelarCartao">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div id="listaCartoes" class="lista-items">
+                            <!-- Cartões carregados via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 4: Loja -->
+                <div id="tabLoja" class="tab-content">
+                    <div class="loja-container">
+                        <h2>Nossa Coleção</h2>
+                        <div class="filtros-loja">
+                            <input type="text" id="filtroNome" placeholder="🔍 Buscar produtos..." class="filtro-input">
+                            <select id="filtroCategoria" class="filtro-select">
+                                <option value="">Todas as categorias</option>
+                                <option value="camisetas">Camisetas</option>
+                                <option value="calcas">Calças</option>
+                                <option value="sapatos">Sapatos</option>
+                                <option value="acessorios">Acessórios</option>
+                                <option value="mochilas">Mochilas</option>
+                            </select>
+                        </div>
+                        <div id="vitrineProdutos" class="vitrine-produtos">
+                            <!-- Produtos carregados via JS (mock) -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 5: Carrinho -->
+                <div id="tabCarrinho" class="tab-content">
+                    <div class="content-card">
+                        <h2>Seu Carrinho</h2>
+                        <div id="carrinhoVazio" class="carrinho-vazio">
+                            <p>🛒 Seu carrinho está vazio</p>
+                            <button class="btn btn-primary" onclick="app.mudarAba('loja')">Ir para Loja</button>
+                        </div>
+                        <div id="carrinhoItens" class="carrinho-itens" style="display:none;">
+                            <!-- Itens do carrinho -->
+                            <table class="tabela-carrinho">
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Preço</th>
+                                        <th>Quantidade</th>
+                                        <th>Subtotal</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corpoCarrinho">
+                                    <!-- Itens -->
+                                </tbody>
+                            </table>
+                            <div class="carrinho-resumo">
+                                <h3>Resumo do Pedido</h3>
+                                <p><strong>Subtotal:</strong> R$ <span id="subtotal">0.00</span></p>
+                                <p><strong>Frete:</strong> R$ <span id="frete">0.00</span></p>
+                                <p class="total"><strong>Total:</strong> R$ <span id="total">0.00</span></p>
+                                <button class="btn btn-primary btn-block">Finalizar Compra</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+                                    VISÃO ADMIN
+             ===================================================================== -->
+        <section id="viewAdmin" class="view-container" style="display:none;">
+            <!-- Dashboard Admin -->
+            <div class="dashboard-admin">
+                <h2>Dashboard Administrativo</h2>
+                
+                <!-- Gráficos Fictícios -->
+                <div class="dashboard-cards">
+                    <div class="dashboard-card">
+                        <h3>📊 Vendas (30 dias)</h3>
+                        <p class="card-value">R$ 12.450,00</p>
+                        <p class="card-trend">+18% vs mês anterior</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>🛍️ Pedidos</h3>
+                        <p class="card-value">248</p>
+                        <p class="card-trend">+12 desde ontem</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>👥 Clientes</h3>
+                        <p class="card-value">1.542</p>
+                        <p class="card-trend">+45 novos</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>📦 Produtos</h3>
+                        <p class="card-value">387</p>
+                        <p class="card-trend">Em estoque</p>
+                    </div>
+                </div>
+
+                <!-- Pseudo-Gráfico (CSS Chart) -->
+                <div class="content-card">
+                    <h3>Gráfico de Vendas Semanais</h3>
+                    <div class="chart-container">
+                        <div class="chart-bar" style="height: 70%">
+                            <span class="chart-label">Seg</span>
+                        </div>
+                        <div class="chart-bar" style="height: 85%">
+                            <span class="chart-label">Ter</span>
+                        </div>
+                        <div class="chart-bar" style="height: 65%">
+                            <span class="chart-label">Qua</span>
+                        </div>
+                        <div class="chart-bar" style="height: 90%">
+                            <span class="chart-label">Qui</span>
+                        </div>
+                        <div class="chart-bar" style="height: 75%">
+                            <span class="chart-label">Sex</span>
+                        </div>
+                        <div class="chart-bar" style="height: 95%">
+                            <span class="chart-label">Sab</span>
+                        </div>
+                        <div class="chart-bar" style="height: 80%">
+                            <span class="chart-label">Dom</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CRUD Produtos -->
+                <div class="content-card">
+                    <h2>Gerenciar Produtos</h2>
+                    <button class="btn btn-primary" id="btnNovoProduto">+ Novo Produto</button>
+                    
+                    <div id="formNovoProduto" class="form-container" style="display:none;">
+                        <form id="formProduto" class="form-grid-2">
+                            <input type="hidden" id="produtoId" name="id">
+                            <div class="form-group">
+                                <label for="produtoNome">Nome</label>
+                                <input type="text" id="produtoNome" name="nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="produtoCategoria">Categoria</label>
+                                <select id="produtoCategoria" name="categoria" required>
+                                    <option value="camisetas">Camisetas</option>
+                                    <option value="calcas">Calças</option>
+                                    <option value="sapatos">Sapatos</option>
+                                    <option value="acessorios">Acessórios</option>
+                                    <option value="mochilas">Mochilas</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="produtoPreco">Preço (R$)</label>
+                                <input type="number" id="produtoPreco" name="preco" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="produtoEstoque">Estoque</label>
+                                <input type="number" id="produtoEstoque" name="estoque" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="produtoDescricao">Descrição</label>
+                                <textarea id="produtoDescricao" name="descricao" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group full-width form-actions">
+                                <button type="submit" class="btn btn-primary">Salvar Produto</button>
+                                <button type="button" class="btn btn-secondary" id="cancelarProduto">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <table class="tabela-admin">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaProdutos">
+                            <!-- Produtos carregados via JS (mock) -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 NomadWear. Feito com ❤️ para viajantes.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="modules/api.js"></script>
+    <script src="modules/client.js"></script>
+    <script src="modules/admin.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

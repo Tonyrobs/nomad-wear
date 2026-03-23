@@ -1,10 +1,15 @@
 package br.com.nomadwear.entities;
 
-import br.com.nomadwear.entities.enums.BandeiraCartao;
-import jakarta.persistence.*;
-
 import java.time.YearMonth;
 import java.util.UUID;
+
+import br.com.nomadwear.entities.enums.BandeiraCartao;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "cartao_credito")
@@ -13,14 +18,20 @@ public class CartaoCredito {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
 
-    private final UUID id;
+    private UUID id;
+    @NotBlank(message = "Número do cartão é obrigatório")
     private String numeroCartao;
+    @NotBlank(message = "Nome do titular é obrigatório")
     private String nomeTitular;
     private YearMonth dataValidade;
+    @NotBlank(message = "Código de segurança é obrigatório")
     private String codigoSeguranca;
     private BandeiraCartao bandeira;
-       
-    public CartaoCredito(String numeroCartao, String nomeTitular, YearMonth dataValidade, String codigoSeguranca, BandeiraCartao bandeira, String cpfTitular) {
+
+    public CartaoCredito() {
+    }
+
+    public CartaoCredito(String numeroCartao, String nomeTitular, YearMonth dataValidade, String codigoSeguranca, BandeiraCartao bandeira) {
         this.id = UUID.randomUUID();
         this.numeroCartao = numeroCartao;
         this.nomeTitular = nomeTitular;
