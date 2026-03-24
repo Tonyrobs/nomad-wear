@@ -21,7 +21,10 @@ public class Cliente {
 
     @NotBlank(message = "O nome é obrigatório")
     private String nome;
+
+    @Enumerated(EnumType.STRING)
     private Genero genero;
+
     private LocalDate dataNascimento;
 
     @NotBlank(message = "O CPF é obrigatório")
@@ -37,16 +40,13 @@ public class Cliente {
     private String senha;
     private boolean ativo;
 
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = Endereco.class)
-    @JoinColumn(name = "endereco_id")
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Endereco> enderecos = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = Telefone.class)
-    @JoinColumn(name = "cliente_id")
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Telefone> telefones = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, targetEntity = CartaoCredito.class)
-    @JoinColumn(name = "cliente_id")
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartaoCredito> cartoes = new ArrayList<>();
 
     public Cliente(){

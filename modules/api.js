@@ -4,7 +4,7 @@
  * ================================================================
  * Este módulo cuida de todas as chamadas fetch() para o backend
  * URLs: http://localhost:8080
- * 
+ *
  * Entidades mapeadas:
  * - /clientes (GET, POST, PUT, DELETE)
  * - /enderecos (GET, POST, PUT, DELETE)
@@ -41,7 +41,7 @@ const API = {
             });
 
             clearTimeout(timeoutId);
-            
+
             console.log(`📥 [API] Response Status: ${response.status} ${response.statusText}`);
 
             if (!response.ok) {
@@ -101,39 +101,26 @@ const API = {
         return this.request(`/clientes/${id}`, { method: 'DELETE' });
     },
 
-    /**
-     * GET - Listar endereços
-     */
-    async listarEnderecos() {
-        return this.request('/enderecos', { method: 'GET' });
+    async listarEnderecos(clienteId) {
+        return this.request(`/clientes/${clienteId}/enderecos`, { method: 'GET' });
     },
 
-    /**
-     * POST - Criar novo endereço
-     * @param {Object} enderecoData - pais, cep, estado, cidade, rua, numero, bairro, complemento, observacoes
-     */
-    async criarEndereco(enderecoData) {
-        return this.request('/enderecos', {
+    async criarEndereco(clienteId, enderecoData) {
+        return this.request(`/clientes/${clienteId}/enderecos`, {
             method: 'POST',
             body: JSON.stringify(enderecoData)
         });
     },
 
-    /**
-     * PUT - Atualizar endereço
-     */
-    async atualizarEndereco(id, enderecoData) {
-        return this.request(`/enderecos/${id}`, {
+    async atualizarEndereco(clienteId, id, enderecoData) {
+        return this.request(`/clientes/${clienteId}/enderecos/${id}`, {
             method: 'PUT',
             body: JSON.stringify(enderecoData)
         });
     },
 
-    /**
-     * DELETE - Deletar endereço
-     */
-    async deletarEndereco(id) {
-        return this.request(`/enderecos/${id}`, { method: 'DELETE' });
+    async deletarEndereco(clienteId, id) {
+        return this.request(`/clientes/${clienteId}/enderecos/${id}`, { method: 'DELETE' });
     },
 
     /**

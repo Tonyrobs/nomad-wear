@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/enderecos")
+@RequestMapping("/clientes/{clienteId}/enderecos")
 public class EnderecoController {
 
     private final EnderecoService enderecoService;
@@ -20,30 +20,29 @@ public class EnderecoController {
     }
 
     @PostMapping
-    public ResponseEntity<Endereco> criar(@Valid @RequestBody Endereco endereco) {
-        Endereco novo = enderecoService.criar(endereco);
-        return ResponseEntity.ok(novo);
+    public ResponseEntity<Endereco> criar(
+            @PathVariable UUID clienteId,
+            @Valid @RequestBody Endereco endereco) {
+        return ResponseEntity.ok(enderecoService.criar(clienteId, endereco));
     }
 
     @GetMapping
-    public ResponseEntity<List<Endereco>> listarTodos() {
-        return ResponseEntity.ok(enderecoService.listarTodos());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Endereco> buscarPorId(@PathVariable UUID id) {
-        Endereco endereco = enderecoService.buscarPorId(id);
-        return ResponseEntity.ok(endereco);
+    public ResponseEntity<List<Endereco>> listar(@PathVariable UUID clienteId) {
+        return ResponseEntity.ok(enderecoService.listarPorCliente(clienteId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Endereco> atualizar(@PathVariable UUID id, @Valid @RequestBody Endereco enderecoAtualizado) {
-        Endereco atualizado = enderecoService.atualizar(id, enderecoAtualizado);
-        return ResponseEntity.ok(atualizado);
+    public ResponseEntity<Endereco> atualizar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id,
+            @Valid @RequestBody Endereco enderecoAtualizado) {
+        return ResponseEntity.ok(enderecoService.atualizar(id, enderecoAtualizado));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
+    public ResponseEntity<Void> deletar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id) {
         enderecoService.deletar(id);
         return ResponseEntity.noContent().build();
     }

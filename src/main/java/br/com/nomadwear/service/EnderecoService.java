@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.nomadwear.entities.Cliente;
 import br.com.nomadwear.entities.Endereco;
 import br.com.nomadwear.repository.EnderecoRepository;
 
@@ -13,43 +14,34 @@ import br.com.nomadwear.repository.EnderecoRepository;
 public class EnderecoService {
 
     private final EnderecoRepository enderecoRepository;
+    private final ClienteService clienteService;
 
-    public EnderecoService(EnderecoRepository enderecoRepository) {
+    public EnderecoService(EnderecoRepository enderecoRepository, ClienteService clienteService) {
         this.enderecoRepository = enderecoRepository;
+        this.clienteService = clienteService;
     }
 
-    /**
-     * Cria um novo endereço
-     */
     @Transactional
-    public Endereco criar(Endereco endereco) {
+    public Endereco criar(UUID clienteId, Endereco endereco) {
+        Cliente cliente = clienteService.buscarPorId(clienteId);
+        endereco.setCliente(cliente); // 👈 associa o cliente
         validarEndereco(endereco);
         return enderecoRepository.save(endereco);
     }
 
-    /**
-     * Lista todos os endereços
-     */
-    public List<Endereco> listarTodos() {
-        return enderecoRepository.findAll();
+    public List<Endereco> listarPorCliente(UUID clienteId) {
+        return enderecoRepository.findByClienteId(clienteId); // 👈 filtra pelo cliente
     }
 
-    /**
-     * Busca endereço por ID
-     */
     public Endereco buscarPorId(UUID id) {
         return enderecoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Endereço não encontrado com ID: " + id));
     }
 
-    /**
-     * Atualiza um endereço existente
-     */
     @Transactional
     public Endereco atualizar(UUID id, Endereco enderecoAtualizado) {
         Endereco endereco = buscarPorId(id);
         validarEndereco(enderecoAtualizado);
-
         endereco.setPais(enderecoAtualizado.getPais());
         endereco.setCep(enderecoAtualizado.getCep());
         endereco.setEstado(enderecoAtualizado.getEstado());
@@ -59,13 +51,9 @@ public class EnderecoService {
         endereco.setBairro(enderecoAtualizado.getBairro());
         endereco.setComplemento(enderecoAtualizado.getComplemento());
         endereco.setObservacoes(enderecoAtualizado.getObservacoes());
-
         return enderecoRepository.save(endereco);
     }
 
-    /**
-     * Deleta um endereço
-     */
     @Transactional
     public void deletar(UUID id) {
         if (!enderecoRepository.existsById(id)) {
@@ -74,36 +62,20 @@ public class EnderecoService {
         enderecoRepository.deleteById(id);
     }
 
-    /**
-     * Valida dados obrigatórios do endereço
-     */
     private void validarEndereco(Endereco endereco) {
-        if (endereco.getPais() == null || endereco.getPais().isBlank()) {
+        if (endereco.getPais() == null || endereco.getPais().isBlank())
             throw new IllegalArgumentException("País é obrigatório");
-        }
-
-        if (endereco.getCep() == null || endereco.getCep().isBlank()) {
+        if (endereco.getCep() == null || endereco.getCep().isBlank())
             throw new IllegalArgumentException("CEP é obrigatório");
-        }
-
-        if (endereco.getEstado() == null || endereco.getEstado().isBlank()) {
+        if (endereco.getEstado() == null || endereco.getEstado().isBlank())
             throw new IllegalArgumentException("Estado é obrigatório");
-        }
-
-        if (endereco.getCidade() == null || endereco.getCidade().isBlank()) {
+        if (endereco.getCidade() == null || endereco.getCidade().isBlank())
             throw new IllegalArgumentException("Cidade é obrigatória");
-        }
-
-        if (endereco.getRua() == null || endereco.getRua().isBlank()) {
+        if (endereco.getRua() == null || endereco.getRua().isBlank())
             throw new IllegalArgumentException("Rua é obrigatória");
-        }
-
-        if (endereco.getNumero() == null || endereco.getNumero().isBlank()) {
+        if (endereco.getNumero() == null || endereco.getNumero().isBlank())
             throw new IllegalArgumentException("Número é obrigatório");
-        }
-
-        if (endereco.getBairro() == null || endereco.getBairro().isBlank()) {
+        if (endereco.getBairro() == null || endereco.getBairro().isBlank())
             throw new IllegalArgumentException("Bairro é obrigatório");
-        }
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -38,7 +39,7 @@ public class CartaoCreditoService {
      */
     public CartaoCredito buscarPorId(UUID id) {
         return cartaoCreditoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cartão não encontrado com ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Cartão não encontrado com ID: " + id));
     }
 
     /**

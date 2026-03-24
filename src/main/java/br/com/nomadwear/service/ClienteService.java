@@ -3,6 +3,7 @@ package br.com.nomadwear.service;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.nomadwear.dto.ClienteAtualizarDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,30 +56,27 @@ public class ClienteService {
     /**
      * Atualiza dados do cliente
      */
+
     @Transactional
-    public Cliente atualizar(UUID id, Cliente clienteAtualizado) {
+    public Cliente atualizar(UUID id, ClienteAtualizarDTO dto) {
         Cliente clienteExistente = buscarPorId(id);
-        
-        validarClienteAntesDeAlterar(clienteAtualizado);
-        
-        // Validar se CPF/Email já existem (se foram alterados)
-        if (!clienteExistente.getCpf().equals(clienteAtualizado.getCpf()) && 
-            clienteRepository.existsByCpf(clienteAtualizado.getCpf())) {
+
+        if (!clienteExistente.getCpf().equals(dto.getCpf()) &&
+                clienteRepository.existsByCpf(dto.getCpf())) {
             throw new IllegalArgumentException("CPF já cadastrado no sistema");
         }
-        
-        if (!clienteExistente.getEmail().equals(clienteAtualizado.getEmail()) && 
-            clienteRepository.existsByEmail(clienteAtualizado.getEmail())) {
+
+        if (!clienteExistente.getEmail().equals(dto.getEmail()) &&
+                clienteRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("E-mail já cadastrado no sistema");
         }
-        
-        // Atualizar apenas os campos permitidos
-        clienteExistente.setNome(clienteAtualizado.getNome());
-        clienteExistente.setCpf(clienteAtualizado.getCpf());
-        clienteExistente.setEmail(clienteAtualizado.getEmail());
-        clienteExistente.setGenero(clienteAtualizado.getGenero());
-        clienteExistente.setDataNascimento(clienteAtualizado.getDataNascimento());
-        
+
+        clienteExistente.setNome(dto.getNome());
+        clienteExistente.setCpf(dto.getCpf());
+        clienteExistente.setEmail(dto.getEmail());
+        clienteExistente.setGenero(dto.getGenero());
+        clienteExistente.setDataNascimento(dto.getDataNascimento());
+
         return clienteRepository.save(clienteExistente);
     }
 

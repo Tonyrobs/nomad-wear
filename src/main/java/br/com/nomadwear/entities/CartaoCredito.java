@@ -4,11 +4,12 @@ import java.time.YearMonth;
 import java.util.UUID;
 
 import br.com.nomadwear.entities.enums.BandeiraCartao;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.YearMonthSerializer;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
@@ -19,6 +20,11 @@ public class CartaoCredito {
     @GeneratedValue(strategy = GenerationType.UUID)
 
     private UUID id;
+
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    @JsonIgnore
+    private Cliente cliente;
     @NotBlank(message = "Número do cartão é obrigatório")
     private String numeroCartao;
     @NotBlank(message = "Nome do titular é obrigatório")
@@ -40,6 +46,11 @@ public class CartaoCredito {
         this.bandeira = bandeira;
     }
     // Getters e Setters
+
+    public Cliente getCliente() { return cliente; }
+
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+
     public UUID getId() {
         return id;
     }

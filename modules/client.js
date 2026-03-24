@@ -39,6 +39,13 @@ const ClientModule = {
 
         // Dados pessoais
         document.getElementById('formClienteDados')?.addEventListener('submit', (e) => this.handleAtualizarDados(e));
+        document.getElementById('cpfCadastro')?.addEventListener('input', (e) => {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+            valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+            valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = valor;
+        });
 
         // Endereços
         document.getElementById('btnNovoEndereco')?.addEventListener('click', () => this.mostrarFormEndereco());
@@ -53,6 +60,12 @@ const ClientModule = {
         // Filtros da loja
         document.getElementById('filtroNome')?.addEventListener('input', () => this.filtrarProdutos());
         document.getElementById('filtroCategoria')?.addEventListener('change', () => this.filtrarProdutos());
+
+        document.getElementById('btnDeletarConta')?.addEventListener('click', () => {
+                if (confirm('Tem certeza? Essa ação não pode ser desfeita.')) {
+                    this.deletarConta();
+                }
+            });
 
         // Logout
         document.getElementById('logoutBtn')?.addEventListener('click', () => this.handleLogout());
@@ -70,21 +83,22 @@ const ClientModule = {
         const dados = Object.fromEntries(formData);
 
         try {
-            // Simulação: busca cliente com esse email
-            const clientes = [];
-            
-            // Mock: Assume que o login foi bem-sucedido
-            this.state.usuarioLogado = {
-                email: dados.email,
-                nome: 'Cliente Demo',
-                id: 'user-123'
-            };
+            // Busca todos os clientes e filtra pelo email
+            // (idealmente o backend teria um endpoint GET /clientes?email=...)
+            const response = await fetch('http://localhost:8080/clientes');
+            const clientes = await response.json();
+            const cliente = clientes.find(c => c.email === dados.email);
 
+            if (!cliente) {
+                throw new Error('Cliente não encontrado');
+            }
+
+            this.state.usuarioLogado = cliente; // ID real do banco
             this.mostrarDashboardCliente();
             this.carregarDadosCliente();
             e.target.reset();
-
             this.mostrarMensagem('Login realizado com sucesso!', 'success');
+
         } catch (error) {
             this.mostrarMensagem('Erro ao fazer login: ' + error.message, 'error');
         }
@@ -95,25 +109,50 @@ const ClientModule = {
         const formData = new FormData(e.target);
         const dados = Object.fromEntries(formData);
 
+        // Formata o CPF para 000.000.000-00 independente do que foi digitado
+        const cpfLimpo = dados.cpf.replace(/\D/g, '');
+        dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+
         try {
-            // Chamada para backend (futura)
-            // const novoCliente = await API.criarCliente(dados);
+            const response = await fetch('http://localhost:8080/clientes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nome: dados.nome,
+                    email: dados.email,
+                    senha: dados.senha,
+                    cpf: dados.cpf,
+                    dataNascimento: dados.dataNascimento,
+                    genero: dados.genero
+                })
+            });
 
-            // Mock: Assumir sucesso
-            this.state.usuarioLogado = {
-                nome: dados.nome,
-                email: dados.email,
-                cpf: dados.cpf,
-                dataNascimento: dados.dataNascimento,
-                genero: dados.genero,
-                id: 'user-' + Date.now()
-            };
+            if (!response.ok) {
+                const erro = await response.text();
+                throw new Error(erro);
+            }
 
+            const clienteSalvo = await response.json();
+            this.state.usuarioLogado = clienteSalvo;
             this.mostrarDashboardCliente();
             e.target.reset();
             this.mostrarMensagem('Cadastro realizado com sucesso!', 'success');
+
         } catch (error) {
             this.mostrarMensagem('Erro ao cadastrar: ' + error.message, 'error');
+        }
+    },
+
+    async deletarConta() {
+        const id = this.state.usuarioLogado.id;
+        try {
+            await fetch(`http://localhost:8080/clientes/${id}`, { method: 'DELETE' });
+            this.handleLogout();
+            this.mostrarMensagem('Conta deletada com sucesso.', 'success');
+        } catch (error) {
+            this.mostrarMensagem('Erro ao deletar conta: ' + error.message, 'error');
         }
     },
 
@@ -154,21 +193,42 @@ const ClientModule = {
         this.carregarCartoes();
     },
 
-    async handleAtualizarDados(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const dados = Object.fromEntries(formData);
+ async handleAtualizarDados(e) {
+     e.preventDefault();
+     const formData = new FormData(e.target);
+     const dados = Object.fromEntries(formData);
+     const id = this.state.usuarioLogado.id;
 
-        try {
-            // Futura chamada: API.atualizarCliente(id, dados)
-            
-            // Mock: Atualizar estado local
-            this.state.usuarioLogado = { ...this.state.usuarioLogado, ...dados };
-            this.mostrarMensagem('Dados atualizados com sucesso!', 'success');
-        } catch (error) {
-            this.mostrarMensagem('Erro ao atualizar dados: ' + error.message, 'error');
-        }
-    },
+     // Limpa e reformata o CPF
+     const cpfLimpo = dados.cpf.replace(/\D/g, '');
+     dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+
+     try {
+         const response = await fetch(`http://localhost:8080/clientes/${id}`, {
+             method: 'PUT',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+                 nome: dados.nome,
+                 email: dados.email,
+                 cpf: dados.cpf,
+                 dataNascimento: dados.dataNascimento,
+                 genero: dados.genero
+             })
+         });
+
+         if (!response.ok) {
+             const erroTexto = await response.text(); // 👈 pega o erro real do backend
+             throw new Error(erroTexto);
+         }
+
+         const clienteAtualizado = await response.json();
+         this.state.usuarioLogado = clienteAtualizado;
+         this.mostrarMensagem('Dados atualizados com sucesso!', 'success');
+
+     } catch (error) {
+         this.mostrarMensagem('Erro ao atualizar: ' + error.message, 'error');
+     }
+ },
 
     /**
      * ================================================================
@@ -188,8 +248,8 @@ const ClientModule = {
 
     async carregarEnderecos() {
         try {
-            this.state.enderecos = await API.listarEnderecos();
-            
+            const id = this.state.usuarioLogado.id; // 👈 adiciona
+            this.state.enderecos = await API.listarEnderecos(id); // 👈 passa id
             this.renderizarEnderecos();
         } catch (error) {
             console.error('Erro ao carregar endereços:', error);
@@ -246,16 +306,17 @@ const ClientModule = {
         const formData = new FormData(e.target);
         const dados = Object.fromEntries(formData);
         const id = dados.id;
+        const clienteId = this.state.usuarioLogado.id; // 👈 adiciona
 
         try {
             if (id) {
-                await API.atualizarEndereco(id, dados);
+                await API.atualizarEndereco(clienteId, id, dados); // 👈 passa clienteId
                 this.mostrarMensagem('Endereço atualizado com sucesso!', 'success');
-                this.state.enderecos = await API.listarEnderecos();
+                this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
             } else {
-                await API.criarEndereco(dados);
+                await API.criarEndereco(clienteId, dados); // 👈 passa clienteId
                 this.mostrarMensagem('Endereço adicionado com sucesso!', 'success');
-                this.state.enderecos = await API.listarEnderecos();
+                this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
             }
 
             this.renderizarEnderecos();
@@ -265,11 +326,17 @@ const ClientModule = {
         }
     },
 
-    deletarEnderecoConfirm(id) {
-        if (confirm('Tem certeza que deseja deletar este endereço?')) {
-            this.deletarEndereco(id);
-        }
-    },
+   async deletarEndereco(id) {
+       const clienteId = this.state.usuarioLogado.id; // 👈 adiciona
+       try {
+           await API.deletarEndereco(clienteId, id); // 👈 passa clienteId
+           this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
+           this.renderizarEnderecos();
+           this.mostrarMensagem('Endereço deletado com sucesso!', 'success');
+       } catch (error) {
+           this.mostrarMensagem('Erro ao deletar endereço: ' + error.message, 'error');
+       }
+   },
 
     async deletarEndereco(id) {
         try {

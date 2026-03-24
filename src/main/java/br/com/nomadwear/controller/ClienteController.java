@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.nomadwear.dto.ClienteAtualizarDTO;
 import br.com.nomadwear.entities.Cliente;
 import br.com.nomadwear.service.ClienteService;
 import jakarta.validation.Valid;
@@ -51,8 +52,10 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> atualizar(@PathVariable UUID id, @Valid @RequestBody Cliente clienteAtualizado) {
-        Cliente salvo = clienteService.atualizar(id, clienteAtualizado);
+    public ResponseEntity<Cliente> atualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody ClienteAtualizarDTO dto) {
+        Cliente salvo = clienteService.atualizar(id, dto);
         return ResponseEntity.ok(salvo);
     }
 

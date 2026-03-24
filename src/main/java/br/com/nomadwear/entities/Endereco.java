@@ -2,11 +2,8 @@ package br.com.nomadwear.entities;
 
 import java.util.UUID;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
@@ -14,27 +11,31 @@ import jakarta.validation.constraints.NotBlank;
 public class Endereco {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-
     private UUID id;
+
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    @JsonIgnore
+    private Cliente cliente;
+
     @NotBlank(message = "País é obrigatório")
     private String pais;
     @NotBlank(message = "CEP é obrigatório")
     private String cep;
     @NotBlank(message = "Estado é obrigatório")
-    private String estado; // Estado ou província
+    private String estado;
     @NotBlank(message = "Cidade é obrigatória")
     private String cidade;
     @NotBlank(message = "Rua é obrigatória")
-    private String rua; // Rua
+    private String rua;
     @NotBlank(message = "Número é obrigatório")
-    private String numero; // Número  
+    private String numero;
     @NotBlank(message = "Bairro é obrigatório")
-    private String bairro; // Bairro 
-    private String complemento; // Complemento
+    private String bairro;
+    private String complemento;
     private String observacoes;
 
-    public Endereco() {
-    }
+    public Endereco() {}
 
     public Endereco(String pais, String cep, String estado, String cidade, String rua, String numero, String bairro, String complemento, String observacoes) {
         this.id = UUID.randomUUID();
@@ -49,79 +50,35 @@ public class Endereco {
         this.observacoes = observacoes;
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
 
-    public String getPais() {
-        return pais;
-    }
+    public Cliente getCliente() { return cliente; }
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
 
-    public String getCep() {
-        return cep;
-    }
+    public String getPais() { return pais; }
+    public void setPais(String pais) { this.pais = pais; }
 
-    public String getEstado() {
-        return estado;
-    }
+    public String getCep() { return cep; }
+    public void setCep(String cep) { this.cep = cep; }
 
-    public String getCidade() {
-        return cidade;
-    }
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
 
-    public String getRua() {
-        return rua;
-    }
+    public String getCidade() { return cidade; }
+    public void setCidade(String cidade) { this.cidade = cidade; }
 
-    public String getNumero() {
-        return numero;
-    }
+    public String getRua() { return rua; }
+    public void setRua(String rua) { this.rua = rua; }
 
-    public String getBairro() {
-        return bairro;
-    }
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) { this.numero = numero; }
 
-    public String getComplemento() {
-        return complemento;
-    }
+    public String getBairro() { return bairro; }
+    public void setBairro(String bairro) { this.bairro = bairro; }
 
-    public String getObservacoes() {
-        return observacoes;
-    }
+    public String getComplemento() { return complemento; }
+    public void setComplemento(String complemento) { this.complemento = complemento; }
 
-    public void setPais(String pais) {
-        this.pais = pais;
-    }
-
-    public void setCep(String cep) {
-        this.cep = cep;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public void setCidade(String cidade) {
-        this.cidade = cidade;
-    }
-
-    public void setRua(String rua) {
-        this.rua = rua;
-    }
-
-    public void setNumero(String numero) {
-        this.numero = numero;
-    }
-
-    public void setBairro(String bairro) {
-        this.bairro = bairro;
-    }
-
-    public void setComplemento(String complemento) {
-        this.complemento = complemento;
-    }
-
-    public void setObservacoes(String observacoes) {
-        this.observacoes = observacoes;
-    }
+    public String getObservacoes() { return observacoes; }
+    public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
 }
