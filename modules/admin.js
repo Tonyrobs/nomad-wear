@@ -1,209 +1,102 @@
-/**
- * ================================================================
- * ADMIN MODULE - Lógica da Visão Admin
- * ================================================================
- * Responsável por:
- * - Dashboard com métricas fictícias
- * - CRUD de Produtos
- * - Visualização de pedidos e vendas
- * ================================================================
- */
-
 const AdminModule = {
     state: {
+        clientes: [],
         produtos: []
     },
 
-    /**
-     * Inicializa o módulo admin
-     */
     init() {
-        this.carregarProdutosMock();
+        console.log('⚙️ AdminModule iniciado com sucesso');
         this.configurarEventos();
+        this.carregarClientes();
+        this.carregarProdutosMock();
     },
 
-    /**
-     * Configura event listeners do admin
-     */
     configurarEventos() {
-        // Produtos
         document.getElementById('btnNovoProduto')?.addEventListener('click', () => this.mostrarFormProduto());
         document.getElementById('cancelarProduto')?.addEventListener('click', () => this.ocultarFormProduto());
         document.getElementById('formProduto')?.addEventListener('submit', (e) => this.handleSalvarProduto(e));
     },
 
-    /**
-     * ================================================================
-     * PRODUTOS (CRUD)
-     * ================================================================
-     */
+    async carregarClientes() {
+        try {
+            console.log("Buscando clientes no banco...");
+            const response = await fetch('http://localhost:8080/clientes');
+            if (!response.ok) throw new Error('Erro ao buscar clientes');
 
-    carregarProdutosMock() {
-        this.state.produtos = [
-            {
-                id: 'prod-1',
-                nome: 'Camiseta Premium Travel',
-                categoria: 'camisetas',
-                preco: 89.90,
-                estoque: 15,
-                descricao: 'Camiseta técnica perfeita para viagens'
-            },
-            {
-                id: 'prod-2',
-                nome: 'Calça Cargo Nomad',
-                categoria: 'calcas',
-                preco: 199.90,
-                estoque: 8,
-                descricao: 'Calça com múltiplos bolsos para viajantes'
-            },
-            {
-                id: 'prod-3',
-                nome: 'Sneaker Conforto',
-                categoria: 'sapatos',
-                preco: 249.90,
-                estoque: 12,
-                descricao: 'Sapato confortável para longas caminhadas'
-            },
-            {
-                id: 'prod-4',
-                nome: 'Mochila Viajante 40L',
-                categoria: 'mochilas',
-                preco: 399.90,
-                estoque: 5,
-                descricao: 'Mochila resistente com compartimentos inteligentes'
-            }
-        ];
-
-        this.renderizarProdutos();
+            const clientes = await response.json();
+            this.state.clientes = clientes;
+            this.renderizarTabelaClientes();
+        } catch (error) {
+            console.error('Erro no AdminModule:', error);
+        }
     },
 
-    mostrarFormProduto() {
-        document.getElementById('formProduto').reset();
-        document.getElementById('produtoId').value = '';
-        document.getElementById('formNovoProduto').style.display = 'block';
-        document.getElementById('formProduto').scrollIntoView({ behavior: 'smooth' });
-    },
+    renderizarTabelaClientes() {
+        const tbody = document.getElementById('listaClientesAdmin');
+        if (!tbody) {
+            console.warn("Aviso: tbody 'listaClientesAdmin' não encontrado no HTML");
+            return;
+        }
 
-    ocultarFormProduto() {
-        document.getElementById('formNovoProduto').style.display = 'none';
-    },
-
-    renderizarProdutos() {
-        const tbody = document.getElementById('tabelaProdutos');
         tbody.innerHTML = '';
-
-        this.state.produtos.forEach(produto => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>${produto.nome}</strong></td>
-                <td>${produto.categoria}</td>
-                <td>R$ ${produto.preco.toFixed(2)}</td>
-                <td>${produto.estoque}</td>
+        this.state.clientes.forEach(cliente => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${cliente.nome}</td>
+                <td>${cliente.email}</td>
+                <td>${cliente.cpf}</td>
                 <td>
-                    <button class="btn-edit" onclick="app.editarProduto('${produto.id}')">Editar</button>
-                    <button class="btn-delete" onclick="app.deletarProdutoConfirm('${produto.id}')">Deletar</button>
+                    <span class="badge ${cliente.ativo ? 'active' : 'inactive'}">
+                        ${cliente.ativo ? 'Ativo' : 'Inativo'}
+                    </span>
                 </td>
-            `;
-            tbody.appendChild(row);
+                <td>
+                    <button class="btn-toggle ${cliente.ativo ? 'btn-danger' : 'btn-success'}"
+                            onclick="AdminModule.alternarStatus('${cliente.id}', ${cliente.ativo})">
+                        ${cliente.ativo ? '🚫 Desativar' : '✅ Ativar'}
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
         });
     },
 
-    editarProduto(id) {
-        const produto = this.state.produtos.find(p => p.id === id);
-        if (!produto) return;
-
-        const form = document.getElementById('formProduto');
-        form.id.value = produto.id;
-        form.nome.value = produto.nome;
-        form.categoria.value = produto.categoria;
-        form.preco.value = produto.preco;
-        form.estoque.value = produto.estoque;
-        form.descricao.value = produto.descricao;
-
-        this.mostrarFormProduto();
-    },
-
-    async handleSalvarProduto(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const dados = Object.fromEntries(formData);
-        const id = dados.id;
+    async alternarStatus(id, statusAtual) {
+        const acao = statusAtual ? 'desativar' : 'ativar';
+        if (!confirm(`Deseja realmente ${acao} este cliente?`)) return;
 
         try {
-            if (!dados.nome || !dados.categoria || !dados.preco) {
-                throw new Error('Preencha todos os campos obrigatórios');
-            }
+            const response = await fetch(`http://localhost:8080/clientes/${id}/${acao}`, {
+                method: 'PUT'
+            });
 
-            if (id) {
-                // Update
-                const index = this.state.produtos.findIndex(p => p.id === id);
-                if (index >= 0) {
-                    this.state.produtos[index] = {
-                        ...this.state.produtos[index],
-                        nome: dados.nome,
-                        categoria: dados.categoria,
-                        preco: parseFloat(dados.preco),
-                        estoque: parseInt(dados.estoque),
-                        descricao: dados.descricao
-                    };
-                }
-                this.mostrarMensagemAdmin('Produto atualizado com sucesso!', 'success');
-            } else {
-                // Create
-                this.state.produtos.push({
-                    id: 'prod-' + Date.now(),
-                    nome: dados.nome,
-                    categoria: dados.categoria,
-                    preco: parseFloat(dados.preco),
-                    estoque: parseInt(dados.estoque),
-                    descricao: dados.descricao
-                });
-                this.mostrarMensagemAdmin('Produto criado com sucesso!', 'success');
-            }
+            if (!response.ok) throw new Error('Erro na resposta do servidor');
 
-            this.renderizarProdutos();
-            this.ocultarFormProduto();
+            app.mostrarMensagem(`Cliente ${statusAtual ? 'desativado' : 'ativado'}!`, 'success');
+            this.carregarClientes();
         } catch (error) {
-            this.mostrarMensagemAdmin('Erro ao salvar: ' + error.message, 'error');
+            alert('Erro ao mudar status: ' + error.message);
         }
     },
 
-    deletarProdutoConfirm(id) {
-        if (confirm('Tem certeza que deseja deletar este produto?')) {
-            this.deletarProduto(id);
-        }
+    carregarProdutosMock() {
+        this.state.produtos = [
+            { id: 'p1', nome: 'Camiseta Nomad', categoria: 'Camisas', preco: 89.9, estoque: 10 }
+        ];
+        this.renderizarTabelaProdutos();
     },
 
-    async deletarProduto(id) {
-        try {
-            this.state.produtos = this.state.produtos.filter(p => p.id !== id);
-            this.renderizarProdutos();
-            this.mostrarMensagemAdmin('Produto deletado com sucesso!', 'success');
-        } catch (error) {
-            this.mostrarMensagemAdmin('Erro ao deletar: ' + error.message, 'error');
-        }
+    renderizarTabelaProdutos() {
+        const tbody = document.getElementById('tabelaProdutos');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        this.state.produtos.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${p.nome}</td><td>${p.categoria}</td><td>R$ ${p.preco}</td><td>${p.estoque}</td><td>-</td>`;
+            tbody.appendChild(tr);
+        });
     },
 
-    /**
-     * ================================================================
-     * UI HELPERS
-     * ================================================================
-     */
-
-    mostrarMensagemAdmin(texto, tipo) {
-        const msg = document.createElement('div');
-        msg.className = `message-container ${tipo}`;
-        msg.textContent = texto;
-        msg.style.position = 'fixed';
-        msg.style.top = '80px';
-        msg.style.right = '20px';
-        msg.style.zIndex = '9999';
-        msg.style.maxWidth = '400px';
-
-        document.body.appendChild(msg);
-
-        setTimeout(() => {
-            msg.remove();
-        }, 4000);
-    }
+    mostrarFormProduto() { document.getElementById('formNovoProduto').style.display = 'block'; },
+    ocultarFormProduto() { document.getElementById('formNovoProduto').style.display = 'none'; },
+    handleSalvarProduto(e) { e.preventDefault(); alert('Em breve!'); }
 };

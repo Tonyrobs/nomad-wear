@@ -3,6 +3,8 @@ package br.com.nomadwear.controller;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.nomadwear.dto.AlterarSenhaDTO;
+import br.com.nomadwear.repository.ClienteRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +25,11 @@ import jakarta.validation.Valid;
 public class ClienteController {
 
     private final ClienteService clienteService;
+    private final ClienteRepository repository; // Injetando o Repository corretamente
 
-    public ClienteController(ClienteService clienteService) {
+    public ClienteController(ClienteService clienteService, ClienteRepository repository) {
         this.clienteService = clienteService;
+        this.repository = repository;
     }
 
     @PostMapping
@@ -63,5 +67,31 @@ public class ClienteController {
     public ResponseEntity<Void> ativar(@PathVariable UUID id) {
         clienteService.ativar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/desativar")
+    public ResponseEntity<Void> desativar(@PathVariable UUID id) {
+        System.out.println("LOG: Tentando desativar o cliente: " + id);
+        clienteService.desativar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/senha")
+    public ResponseEntity<?> alterarSenha(@PathVariable UUID id, @RequestBody AlterarSenhaDTO dados) {
+        var clienteOptional = repository.findById(id);
+        if (clienteOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var cliente = clienteOptional.get();
+
+        if (!cliente.getSenha().equals(dados.senhaAtual())) {
+            return ResponseEntity.badRequest().body("A senha atual está incorreta.");
+        }
+
+        cliente.setSenha(dados.novaSenha());
+        repository.save(cliente);
+
+        return ResponseEntity.ok().build();
     }
 }

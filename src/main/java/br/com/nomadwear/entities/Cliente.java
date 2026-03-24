@@ -36,7 +36,6 @@ public class Cliente {
     private String email;
 
     @NotBlank(message = "A senha é obrigatória")
-    @com.fasterxml.jackson.annotation.JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
     private boolean ativo;
 

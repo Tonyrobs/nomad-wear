@@ -19,9 +19,6 @@ public class ClienteService {
         this.clienteRepository = clienteRepository;
     }
 
-    /**
-     * Cadastra um novo cliente com validações de negócio
-     */
     @Transactional
     public Cliente cadastrar(Cliente cliente) {
         validarClienteAntesDeAlterar(cliente);
@@ -38,24 +35,16 @@ public class ClienteService {
         return clienteRepository.save(cliente);
     }
 
-    /**
-     * Lista todos os clientes ativos
-     */
+
     public List<Cliente> listarTodos() {
         return clienteRepository.findAll();
     }
 
-    /**
-     * Busca cliente por ID
-     */
     public Cliente buscarPorId(UUID id) {
         return clienteRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado com ID: " + id));
     }
 
-    /**
-     * Atualiza dados do cliente
-     */
 
     @Transactional
     public Cliente atualizar(UUID id, ClienteAtualizarDTO dto) {
@@ -80,19 +69,15 @@ public class ClienteService {
         return clienteRepository.save(clienteExistente);
     }
 
-    /**
-     * Deleta um cliente (soft delete - marca como inativo)
-     */
+
     @Transactional
     public void deletar(UUID id) {
-        Cliente cliente = buscarPorId(id);
-        cliente.setAtivo(false);
-        clienteRepository.save(cliente);
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o ID: " + id));
+
+        clienteRepository.delete(cliente);
     }
 
-    /**
-     * Ativa um cliente desativado
-     */
     @Transactional
     public void ativar(UUID id) {
         Cliente cliente = buscarPorId(id);
@@ -100,9 +85,13 @@ public class ClienteService {
         clienteRepository.save(cliente);
     }
 
-    /**
-     * Valida dados obrigatórios do cliente
-     */
+    @Transactional
+    public void desativar(UUID id) {
+        Cliente cliente = buscarPorId(id);
+        cliente.setAtivo(false);
+        clienteRepository.save(cliente);
+    }
+
     private void validarClienteAntesDeAlterar(Cliente cliente) {
         if (cliente.getNome() == null || cliente.getNome().isBlank()) {
             throw new IllegalArgumentException("Nome do cliente é obrigatório");

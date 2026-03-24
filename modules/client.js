@@ -16,14 +16,13 @@ const ClientModule = {
     state: {
         usuarioLogado: null,
         enderecos: [],
+        telefones: [],
         cartoes: [],
         carrinho: [],
         produtos: []
     },
 
-    /**
-     * Inicializa o módulo cliente
-     */
+    // Inicializa o módulo cliente
     init() {
         this.carregarProdutosMock();
         this.configurarEventos();
@@ -39,6 +38,9 @@ const ClientModule = {
 
         // Dados pessoais
         document.getElementById('formClienteDados')?.addEventListener('submit', (e) => this.handleAtualizarDados(e));
+
+        document.getElementById('formAlterarSenha')?.addEventListener('submit', (e) => this.handleAlterarSenha(e));
+
         document.getElementById('cpfCadastro')?.addEventListener('input', (e) => {
             let valor = e.target.value.replace(/\D/g, '');
             valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
@@ -51,6 +53,11 @@ const ClientModule = {
         document.getElementById('btnNovoEndereco')?.addEventListener('click', () => this.mostrarFormEndereco());
         document.getElementById('cancelarEndereco')?.addEventListener('click', () => this.ocultarFormEndereco());
         document.getElementById('formEndereco')?.addEventListener('submit', (e) => this.handleSalvarEndereco(e));
+
+        // Telefones
+        document.getElementById('btnNovoTelefone')?.addEventListener('click', () => this.mostrarFormTelefone());
+        document.getElementById('cancelarTelefone')?.addEventListener('click', () => this.ocultarFormTelefone());
+        document.getElementById('formTelefone')?.addEventListener('submit', (e) => this.handleSalvarTelefone(e));
 
         // Cartões
         document.getElementById('btnNovoCartao')?.addEventListener('click', () => this.mostrarFormCartao());
@@ -78,31 +85,40 @@ const ClientModule = {
      */
 
     async handleLogin(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const dados = Object.fromEntries(formData);
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const dados = Object.fromEntries(formData);
 
-        try {
-            // Busca todos os clientes e filtra pelo email
-            // (idealmente o backend teria um endpoint GET /clientes?email=...)
-            const response = await fetch('http://localhost:8080/clientes');
-            const clientes = await response.json();
-            const cliente = clientes.find(c => c.email === dados.email);
+            try {
+                const response = await fetch('http://localhost:8080/clientes');
+                const clientes = await response.json();
 
-            if (!cliente) {
-                throw new Error('Cliente não encontrado');
+                const cliente = clientes.find(c => c.email === dados.email);
+
+                if (!cliente) {
+                    throw new Error('E-mail não cadastrado.');
+                }
+
+                console.log("Senha que veio do Banco:", cliente.senha);
+                console.log("Senha que você digitou:", dados.senha);
+
+                if (cliente.senha !== dados.senha) {
+                    throw new Error('Senha incorreta.');
+                }
+
+                console.log("SUCESSO: Cliente encontrado!", cliente);
+
+                this.state.usuarioLogado = cliente;
+                this.mostrarDashboardCliente();
+                this.carregarDadosCliente();
+                e.target.reset();
+                this.mostrarMensagem('Login realizado com sucesso!', 'success');
+
+            } catch (error) {
+                console.error("ERRO NO LOGIN:", error.message);
+                this.mostrarMensagem('Erro ao fazer login: ' + error.message, 'error');
             }
-
-            this.state.usuarioLogado = cliente; // ID real do banco
-            this.mostrarDashboardCliente();
-            this.carregarDadosCliente();
-            e.target.reset();
-            this.mostrarMensagem('Login realizado com sucesso!', 'success');
-
-        } catch (error) {
-            this.mostrarMensagem('Erro ao fazer login: ' + error.message, 'error');
-        }
-    },
+        },
 
     async handleRegister(e) {
         e.preventDefault();
@@ -136,6 +152,14 @@ const ClientModule = {
 
             const clienteSalvo = await response.json();
             this.state.usuarioLogado = clienteSalvo;
+
+            if (dados.ddd && dados.telefone) {
+                        await API.criarTelefone(clienteSalvo.id, {
+                            ddd: dados.ddd,
+                            numero: dados.telefone
+                        });
+                    }
+
             this.mostrarDashboardCliente();
             e.target.reset();
             this.mostrarMensagem('Cadastro realizado com sucesso!', 'success');
@@ -146,15 +170,21 @@ const ClientModule = {
     },
 
     async deletarConta() {
-        const id = this.state.usuarioLogado.id;
-        try {
-            await fetch(`http://localhost:8080/clientes/${id}`, { method: 'DELETE' });
-            this.handleLogout();
-            this.mostrarMensagem('Conta deletada com sucesso.', 'success');
-        } catch (error) {
-            this.mostrarMensagem('Erro ao deletar conta: ' + error.message, 'error');
-        }
-    },
+            const id = this.state.usuarioLogado.id;
+            try {
+                const response = await fetch(`http://localhost:8080/clientes/${id}`, { method: 'DELETE' });
+
+                if (!response.ok) {
+                    const erroTexto = await response.text();
+                    throw new Error(erroTexto || 'O banco de dados bloqueou a exclusão (Cliente possui filhos).');
+                }
+
+                this.handleLogout();
+                this.mostrarMensagem('Conta deletada com sucesso.', 'success');
+            } catch (error) {
+                this.mostrarMensagem('Erro ao deletar conta: ' + error.message, 'error');
+            }
+        },
 
     handleLogout() {
         this.state.usuarioLogado = null;
@@ -191,44 +221,77 @@ const ClientModule = {
         // Carregar dados relacionados
         this.carregarEnderecos();
         this.carregarCartoes();
+        this.carregarTelefones();
     },
 
- async handleAtualizarDados(e) {
-     e.preventDefault();
-     const formData = new FormData(e.target);
-     const dados = Object.fromEntries(formData);
-     const id = this.state.usuarioLogado.id;
+    async handleAtualizarDados(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const dados = Object.fromEntries(formData);
+        const id = this.state.usuarioLogado.id;
 
-     // Limpa e reformata o CPF
-     const cpfLimpo = dados.cpf.replace(/\D/g, '');
-     dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        const cpfLimpo = dados.cpf.replace(/\D/g, '');
+        dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 
-     try {
-         const response = await fetch(`http://localhost:8080/clientes/${id}`, {
-             method: 'PUT',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-                 nome: dados.nome,
-                 email: dados.email,
-                 cpf: dados.cpf,
-                 dataNascimento: dados.dataNascimento,
-                 genero: dados.genero
-             })
-         });
+        try {
+            const response = await fetch(`http://localhost:8080/clientes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nome: dados.nome,
+                    email: dados.email,
+                    cpf: dados.cpf,
+                    dataNascimento: dados.dataNascimento,
+                    genero: dados.genero
+                })
+            });
 
-         if (!response.ok) {
-             const erroTexto = await response.text(); // 👈 pega o erro real do backend
-             throw new Error(erroTexto);
-         }
+            if (!response.ok) {
+                const erroTexto = await response.text(); // 👈 pega o erro real do backend
+                throw new Error(erroTexto);
+            }
 
-         const clienteAtualizado = await response.json();
-         this.state.usuarioLogado = clienteAtualizado;
-         this.mostrarMensagem('Dados atualizados com sucesso!', 'success');
+            const clienteAtualizado = await response.json();
+            this.state.usuarioLogado = clienteAtualizado;
+            this.mostrarMensagem('Dados atualizados com sucesso!', 'success');
 
      } catch (error) {
          this.mostrarMensagem('Erro ao atualizar: ' + error.message, 'error');
-     }
- },
+         }
+     },
+    async handleAlterarSenha(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const dados = Object.fromEntries(formData);
+            const id = this.state.usuarioLogado.id;
+
+            if (dados.novaSenha !== dados.confirmarSenha) {
+                this.mostrarMensagem('As senhas novas não coincidem!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8080/clientes/${id}/senha`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senhaAtual: dados.senhaAtual,
+                        novaSenha: dados.novaSenha
+                    })
+                });
+
+                if (!response.ok) {
+                    const erroTexto = await response.text();
+                    throw new Error(erroTexto);
+                }
+
+                this.mostrarMensagem('Senha atualizada com sucesso!', 'success');
+                e.target.reset();
+
+            } catch (error) {
+                this.mostrarMensagem('Erro ao alterar senha: ' + error.message, 'error');
+            }
+        },
 
     /**
      * ================================================================
@@ -274,7 +337,7 @@ const ClientModule = {
                 <p><small>${endereco.observacoes || ''}</small></p>
                 <div class="item-actions">
                     <button class="btn-edit" onclick="app.editarEndereco('${endereco.id}')">Editar</button>
-                    <button class="btn-delete" onclick="app.deletarEnderecoConfirm('${endereco.id}')">Deletar</button>
+                    <button class="btn-delete" onclick="app.deletarEndereco('${endereco.id}')">Deletar</button>
                 </div>
             `;
             container.appendChild(card);
@@ -325,30 +388,119 @@ const ClientModule = {
             this.mostrarMensagem('Erro ao salvar endereço: ' + error.message, 'error');
         }
     },
-
-   async deletarEndereco(id) {
-       const clienteId = this.state.usuarioLogado.id; // 👈 adiciona
-       try {
-           await API.deletarEndereco(clienteId, id); // 👈 passa clienteId
-           this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
-           this.renderizarEnderecos();
-           this.mostrarMensagem('Endereço deletado com sucesso!', 'success');
-       } catch (error) {
-           this.mostrarMensagem('Erro ao deletar endereço: ' + error.message, 'error');
-       }
-   },
-
     async deletarEndereco(id) {
+            if (!confirm('Tem certeza que deseja remover este endereço?')) return;
+
+            const clienteId = this.state.usuarioLogado.id;
+            try {
+                // Chamando a API passando os dois IDs necessários
+                await API.deletarEndereco(clienteId, id);
+
+                // Atualiza a lista local e a tela
+                this.state.enderecos = await API.listarEnderecos(clienteId);
+                this.renderizarEnderecos();
+                this.mostrarMensagem('Endereço deletado com sucesso!', 'success');
+            } catch (error) {
+                this.mostrarMensagem('Erro ao deletar endereço: ' + error.message, 'error');
+            }
+        },
+
+    // ================================================================
+    // TELEFONES (CRUD)
+    // ================================================================
+
+    mostrarFormTelefone() {
+        document.getElementById('formTelefone').reset();
+        document.getElementById('telefoneId').value = '';
+        document.getElementById('formNovoTelefone').style.display = 'block';
+    },
+
+    ocultarFormTelefone() {
+        document.getElementById('formNovoTelefone').style.display = 'none';
+    },
+
+    async carregarTelefones() {
         try {
-            await API.deletarEndereco(id);
-            this.state.enderecos = await API.listarEnderecos();
-            this.renderizarEnderecos();
-            this.mostrarMensagem('Endereço deletado com sucesso!', 'success');
+            const clienteId = this.state.usuarioLogado.id;
+            this.state.telefones = await API.listarTelefones(clienteId);
+            this.renderizarTelefones();
         } catch (error) {
-            this.mostrarMensagem('Erro ao deletar endereço: ' + error.message, 'error');
+            console.error('Erro ao carregar telefones:', error);
         }
     },
 
+    renderizarTelefones() {
+        const container = document.getElementById('listaTelefones');
+        container.innerHTML = '';
+
+        this.state.telefones.forEach(telefone => {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <h4>📱 (${telefone.ddd}) ${telefone.numero}</h4>
+                <div class="item-actions">
+                    <button class="btn-edit" onclick="app.editarTelefone('${telefone.id}')">Editar</button>
+                    <button class="btn-delete" onclick="app.deletarTelefoneConfirm('${telefone.id}')">Deletar</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
+    editarTelefone(id) {
+        const telefone = this.state.telefones.find(t => t.id === id);
+        if (!telefone) return;
+
+        const form = document.getElementById('formTelefone');
+        form.telefoneId.value = telefone.id;
+        form.ddd.value = telefone.ddd;
+        form.numeroTelefone.value = telefone.numero;
+
+        document.getElementById('formNovoTelefone').style.display = 'block';
+        document.getElementById('formTelefone').scrollIntoView({ behavior: 'smooth' });
+    },
+
+    async handleSalvarTelefone(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const dados = Object.fromEntries(formData);
+        const id = dados.id;
+        const clienteId = this.state.usuarioLogado.id;
+
+        try {
+            if (id) {
+                await API.atualizarTelefone(clienteId, id, dados);
+                this.mostrarMensagem('Telefone atualizado com sucesso!', 'success');
+            } else {
+                await API.criarTelefone(clienteId, dados);
+                this.mostrarMensagem('Telefone adicionado com sucesso!', 'success');
+            }
+
+            this.state.telefones = await API.listarTelefones(clienteId);
+            this.renderizarTelefones();
+            this.ocultarFormTelefone();
+        } catch (error) {
+            this.mostrarMensagem('Erro ao salvar telefone: ' + error.message, 'error');
+        }
+    },
+
+    deletarTelefoneConfirm(id) {
+        if (confirm('Tem certeza que deseja deletar este telefone?')) {
+            this.deletarTelefone(id);
+        }
+    },
+
+    async deletarTelefone(id) {
+        const clienteId = this.state.usuarioLogado.id;
+        try {
+            await API.deletarTelefone(clienteId, id);
+            this.state.telefones = await API.listarTelefones(clienteId);
+            this.renderizarTelefones();
+            this.mostrarMensagem('Telefone deletado com sucesso!', 'success');
+        } catch (error) {
+            this.mostrarMensagem('Erro ao deletar telefone: ' + error.message, 'error');
+        }
+    },
     /**
      * ================================================================
      * CARTÕES DE CRÉDITO (CRUD)
@@ -605,7 +757,7 @@ const ClientModule = {
                         ${produto.estoque > 0 ? `Em estoque (${produto.estoque})` : 'Fora de estoque'}
                     </p>
                     <div class="produto-acoes">
-                        <button class="btn-carrinho" 
+                        <button class="btn-carrinho"
                             ${produto.estoque === 0 ? 'disabled' : ''}
                             onclick="app.adicionarAoCarrinho('${produto.id}')">
                             ${produto.estoque === 0 ? 'Indisponível' : '🛒 Adicionar'}
@@ -635,7 +787,7 @@ const ClientModule = {
         if (!produto || produto.estoque === 0) return;
 
         const itemExistente = this.state.carrinho.find(item => item.id === produtoId);
-        
+
         if (itemExistente) {
             itemExistente.quantidade++;
         } else {
@@ -710,9 +862,20 @@ const ClientModule = {
      */
 
     mostrarDashboardCliente() {
-        document.getElementById('authSection').style.display = 'none';
-        document.getElementById('dashboardCliente').style.display = 'block';
-    },
+            const authSection = document.getElementById('authSection');
+            const dashboard = document.getElementById('dashboardCliente');
+            const userDisplay = document.getElementById('userDisplay');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (authSection) authSection.style.display = 'none';
+            if (dashboard) dashboard.style.display = 'block';
+
+            // Garante que o nome do usuário apareça no topo
+            if (this.state.usuarioLogado) {
+                if (userDisplay) userDisplay.textContent = `👤 ${this.state.usuarioLogado.nome}`;
+                if (logoutBtn) logoutBtn.style.display = 'inline-block';
+            }
+        },
 
     mostrarMensagem(texto, tipo) {
         const container = document.getElementById('messageContainer');

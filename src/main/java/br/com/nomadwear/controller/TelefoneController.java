@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/telefones")
+@RequestMapping("/clientes/{clienteId}/telefones")
 public class TelefoneController {
 
     private final TelefoneService telefoneService;
@@ -20,30 +20,29 @@ public class TelefoneController {
     }
 
     @PostMapping
-    public ResponseEntity<Telefone> criar(@Valid @RequestBody Telefone telefone) {
-        Telefone novo = telefoneService.criar(telefone);
-        return ResponseEntity.ok(novo);
+    public ResponseEntity<Telefone> criar(
+            @PathVariable UUID clienteId,
+            @Valid @RequestBody Telefone telefone) {
+        return ResponseEntity.ok(telefoneService.criar(clienteId, telefone));
     }
 
     @GetMapping
-    public ResponseEntity<List<Telefone>> listarTodos() {
-        return ResponseEntity.ok(telefoneService.listarTodos());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Telefone> buscarPorId(@PathVariable UUID id) {
-        Telefone telefone = telefoneService.buscarPorId(id);
-        return ResponseEntity.ok(telefone);
+    public ResponseEntity<List<Telefone>> listar(@PathVariable UUID clienteId) {
+        return ResponseEntity.ok(telefoneService.listarPorCliente(clienteId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Telefone> atualizar(@PathVariable UUID id, @Valid @RequestBody Telefone telefoneAtualizado) {
-        Telefone atualizado = telefoneService.atualizar(id, telefoneAtualizado);
-        return ResponseEntity.ok(atualizado);
+    public ResponseEntity<Telefone> atualizar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id,
+            @Valid @RequestBody Telefone telefoneAtualizado) {
+        return ResponseEntity.ok(telefoneService.atualizar(id, telefoneAtualizado));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
+    public ResponseEntity<Void> deletar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id) {
         telefoneService.deletar(id);
         return ResponseEntity.noContent().build();
     }

@@ -16,9 +16,7 @@ const app = {
         abaAtual: 'minha-conta'
     },
 
-    /**
-     * Inicializa a aplicação
-     */
+    // Inicializa a aplicação
     init() {
         console.log('🚀 NomadWear iniciando...');
 
@@ -64,6 +62,11 @@ const app = {
         document.getElementById('viewCliente').style.display = visao === 'cliente' ? 'block' : 'none';
         document.getElementById('viewAdmin').style.display = visao === 'admin' ? 'block' : 'none';
 
+        if (visao === 'admin') {
+                    console.log("Acessando área administrativa, carregando dados...");
+                    AdminModule.carregarClientes(); // Garante que a lista de clientes carregue ao entrar
+                }
+
         // Se cliente, voltar para página de login se não autenticado
         if (visao === 'cliente' && !ClientModule.state.usuarioLogado) {
             document.getElementById('authSection').style.display = 'block';
@@ -89,62 +92,70 @@ const app = {
     },
 
     mudarAba(novaAba) {
-        // Ocultar todo os tabs
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
+            // Log para saber o que o botão enviou
+            console.log("DEBUG: Botão clicado enviou o data-tab =", novaAba);
 
-        // Desativar todos os botões
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
+            const nomeFormatado = this.capitalizarPrimeiraLetra(novaAba);
+            const idProcurado = `tab${nomeFormatado}`;
 
-        // Ativar nova aba
-        const novaAbaDom = document.getElementById(`tab${this.capitalizarPrimeiraLetra(novaAba)}`);
-        if (novaAbaDom) {
-            novaAbaDom.classList.add('active');
+            console.log("DEBUG: O JavaScript vai procurar no seu HTML por id =", idProcurado);
 
-            // Ativar botão correspondente
-            document.querySelector(`[data-tab="${novaAba}"]`).classList.add('active');
+            const novaAbaDom = document.getElementById(idProcurado);
 
-            // Carregar dados se necessário
-            if (novaAba === 'enderecos') {
-                ClientModule.carregarEnderecos();
-            } else if (novaAba === 'cartoes') {
-                ClientModule.carregarCartoes();
+            if (!novaAbaDom) {
+                console.error(`ERRO: A aba com o id="${idProcurado}" não existe no seu HTML!`);
+                return;
             }
 
-            this.state.abaAtual = novaAba;
-            console.log(`Nova aba: ${novaAba}`);
-        }
-    },
+            // Esconde todas as abas
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Ativa a correta
+            novaAbaDom.classList.add('active');
+            document.querySelector(`.tab-btn[data-tab="${novaAba}"]`)?.classList.add('active');
+
+            console.log("SUCESSO: Aba trocada para", idProcurado);
+        },
 
     capitalizarPrimeiraLetra(txt) {
         return txt.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
     },
 
-    /**
-     * ================================================================
-     * MÉTODOS EXPOSTOS PARA HTML (callbacks)
-     * ================================================================
-     * Métodos do Cliente
-     */
+        /**
+          * ================================================================
+          * MÉTODOS EXPOSTOS PARA HTML (callbacks)
+          * ================================================================
+          * Métodos do Cliente
+          */
 
-    editarEndereco(id) {
-        ClientModule.editarEndereco(id);
-        this.mudarAba('enderecos');
-    },
+         editarEndereco(id) {
+             ClientModule.editarEndereco(id);
+         },
 
-    deletarEnderecoConfirm(id) {
-        if (confirm('Tem certeza que deseja deletar este endereço?')) {
-            ClientModule.deletarEndereco(id);
-        }
-    },
+         deletarEndereco(id) {
+                 ClientModule.deletarEndereco(id);
+             },
 
-    editarCartao(id) {
-        ClientModule.editarCartao(id);
-        this.mudarAba('cartoes');
-    },
+         deletarEnderecoConfirm(id) {
+             if (confirm('Tem certeza que deseja deletar este endereço?')) {
+                 ClientModule.deletarEndereco(id);
+             }
+         },
+
+         editarTelefone(id) {
+             ClientModule.editarTelefone(id);
+         },
+
+         deletarTelefoneConfirm(id) {
+             if (confirm('Tem certeza que deseja deletar este telefone?')) {
+                 ClientModule.deletarTelefone(id);
+             }
+         },
+
+         editarCartao(id) {
+             ClientModule.editarCartao(id);
+         },
 
     deletarCartaoConfirm(id) {
         if (confirm('Tem certeza que deseja deletar este cartão?')) {

@@ -17,9 +17,6 @@ const API = {
     BASE_URL: 'http://localhost:8080',
     TIMEOUT: 5000,
 
-    /**
-     * Faz uma requisição genérica com tratamento de erros
-     */
     async request(endpoint, options = {}) {
         const url = `${this.BASE_URL}${endpoint}`;
         const defaultOptions = {
@@ -50,7 +47,6 @@ const API = {
                 throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
             }
 
-            // Se não houver conteúdo, retorna null
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 const data = await response.json();
@@ -65,17 +61,11 @@ const API = {
         }
     },
 
-    /**
-     * GET - Listar todos os clientes
-     */
+
     async listarClientes() {
         return this.request('/clientes', { method: 'GET' });
     },
 
-    /**
-     * POST - Criar novo cliente
-     * @param {Object} clienteData - Nome, email, hora, cpf, dataNascimento, genero, senha
-     */
     async criarCliente(clienteData) {
         return this.request('/clientes', {
             method: 'POST',
@@ -83,10 +73,6 @@ const API = {
         });
     },
 
-    /**
-     * PUT - Atualizar cliente
-     * @param {string} id - ID do cliente (UUID)
-     */
     async atualizarCliente(id, clienteData) {
         return this.request(`/clientes/${id}`, {
             method: 'PUT',
@@ -94,9 +80,6 @@ const API = {
         });
     },
 
-    /**
-     * DELETE - Deletar cliente
-     */
     async deletarCliente(id) {
         return this.request(`/clientes/${id}`, { method: 'DELETE' });
     },
@@ -119,56 +102,39 @@ const API = {
         });
     },
 
-    async deletarEndereco(clienteId, id) {
-        return this.request(`/clientes/${clienteId}/enderecos/${id}`, { method: 'DELETE' });
+    async deletarEndereco(clienteId, enderecoId) {
+            const response = await fetch(`${this.BASE_URL}/clientes/${clienteId}/enderecos/${enderecoId}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error('Erro ao deletar endereço');
+            return true;
+        },
+    async listarTelefones(clienteId) {
+        return this.request(`/clientes/${clienteId}/telefones`, { method: 'GET' });
     },
 
-    /**
-     * GET - Listar telefones
-     */
-    async listarTelefones() {
-        return this.request('/telefones', { method: 'GET' });
-    },
-
-    /**
-     * POST - Criar novo telefone
-     * @param {Object} telefoneData - ddd, numero
-     */
-    async criarTelefone(telefoneData) {
-        return this.request('/telefones', {
+    async criarTelefone(clienteId, telefoneData) {
+        return this.request(`/clientes/${clienteId}/telefones`, {
             method: 'POST',
             body: JSON.stringify(telefoneData)
         });
     },
 
-    /**
-     * PUT - Atualizar telefone
-     */
-    async atualizarTelefone(id, telefoneData) {
-        return this.request(`/telefones/${id}`, {
+    async atualizarTelefone(clienteId, id, telefoneData) {
+        return this.request(`/clientes/${clienteId}/telefones/${id}`, {
             method: 'PUT',
             body: JSON.stringify(telefoneData)
         });
     },
 
-    /**
-     * DELETE - Deletar telefone
-     */
-    async deletarTelefone(id) {
-        return this.request(`/telefones/${id}`, { method: 'DELETE' });
+    async deletarTelefone(clienteId, id) {
+        return this.request(`/clientes/${clienteId}/telefones/${id}`, { method: 'DELETE' });
     },
 
-    /**
-     * GET - Listar cartões
-     */
     async listarCartoes() {
         return this.request('/cartoes', { method: 'GET' });
     },
 
-    /**
-     * POST - Criar novo cartão
-     * @param {Object} cartaoData - numeroCartao, nomeTitular, dataValidade, codigoSeguranca, bandeira
-     */
     async criarCartao(cartaoData) {
         return this.request('/cartoes', {
             method: 'POST',
@@ -176,9 +142,6 @@ const API = {
         });
     },
 
-    /**
-     * PUT - Atualizar cartão
-     */
     async atualizarCartao(id, cartaoData) {
         return this.request(`/cartoes/${id}`, {
             method: 'PUT',
@@ -186,9 +149,6 @@ const API = {
         });
     },
 
-    /**
-     * DELETE - Deletar cartão
-     */
     async deletarCartao(id) {
         return this.request(`/cartoes/${id}`, { method: 'DELETE' });
     }

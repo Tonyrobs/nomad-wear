@@ -58,6 +58,10 @@
                             <input type="password" name="senha" placeholder="Senha" required>
                             <input type="text" id="cpfcadastro" name="cpf" placeholder="CPF (000.000.000-00)" required maxlength="14">
                             <input type="date" name="dataNascimento" placeholder="Data de nascimento" required>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" name="ddd" placeholder="DDD" maxlength="2" style="width:80px;">
+                                <input type="text" name="telefone" placeholder="Número do telefone">
+                            </div>
                             <select name="genero" required>
                                 <option value="">Selecione o gênero</option>
                                 <option value="MASCULINO">Masculino</option>
@@ -77,18 +81,19 @@
                 <!-- Abas de navegação -->
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="minha-conta">👤 Minha Conta</button>
-                    <button class="tab-btn" data-tab="enderecos">📍 Endereços</button>
-                    <button class="tab-btn" data-tab="cartoes">💳 Cartões</button>
                     <button class="tab-btn" data-tab="loja">🛍️ Loja</button>
                     <button class="tab-btn" data-tab="carrinho">🛒 Carrinho</button>
                 </div>
 
-                <!-- ABA 1: Minha Conta -->
                 <div id="tabMinhaConta" class="tab-content active">
-                    <button type="button" class="btn btn-delete" id="btnDeletarConta">
-                        Deletar minha conta
-                    </button>
-                    <div class="content-card">
+
+                    <div style="text-align: right; margin-bottom: 15px;">
+                        <button type="button" class="btn btn-delete" id="btnDeletarConta" style="background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                            🗑️ Deletar minha conta
+                        </button>
+                    </div>
+
+                    <div class="content-card" style="margin-bottom: 25px;">
                         <h2>Meus Dados Pessoais</h2>
                         <form id="formClienteDados" class="form-grid-2">
                             <div class="form-group">
@@ -113,66 +118,57 @@
                                     <option value="OUTRO">Outro</option>
                                     <option value="PREFIRO_NAO_DIZER">Prefiro Não Dizer</option>
                                 </select>
-                                </select>
                             </div>
                             <div class="form-group full-width">
                                 <label for="dataNascimento">Data de Nascimento</label>
                                 <input type="date" id="dataNascimento" name="dataNascimento" required>
                             </div>
                             <div class="form-group full-width">
-                                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">Salvar Alterações Pessoais</button>
                             </div>
                         </form>
                         <div id="messageContainer" class="message-container"></div>
                     </div>
-                </div>
 
-                <!-- ABA 2: Endereços -->
-                <div id="tabEnderecos" class="tab-content">
-                    <div class="content-card">
-                        <h2>Meus Endereços</h2>
-                        <button class="btn btn-primary" id="btnNovoEndereco">+ Novo Endereço</button>
-                        
-                        <div id="formNovoEndereco" class="form-container" style="display:none;">
+                    <div class="content-card" style="margin-bottom: 25px;">
+                        <h2>Segurança</h2>
+                        <form id="formAlterarSenha" class="form-grid-2">
+                            <div class="form-group full-width">
+                                <label for="senhaAtual">Senha Atual</label>
+                                <input type="password" id="senhaAtual" name="senhaAtual" placeholder="Digite sua senha atual" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="novaSenha">Nova Senha</label>
+                                <input type="password" id="novaSenha" name="novaSenha" placeholder="Digite a nova senha" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmarSenha">Confirmar Nova Senha</label>
+                                <input type="password" id="confirmarSenha" name="confirmarSenha" placeholder="Repita a nova senha" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <button type="submit" class="btn btn-primary" style="width: 100%; background-color: #333;">Atualizar Senha</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="content-card" style="margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h2 style="margin: 0;">Meus Endereços</h2>
+                            <button class="btn btn-secondary" id="btnNovoEndereco" style="border: 1px solid #0056b3; background: transparent; color: #0056b3;">+ Novo Endereço</button>
+                        </div>
+
+                        <div id="formNovoEndereco" class="form-container" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                             <form id="formEndereco" class="form-grid-2">
                                 <input type="hidden" id="enderecoId" name="id">
-                                <div class="form-group">
-                                    <label for="pais">País</label>
-                                    <input type="text" id="pais" name="pais" value="Brasil" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="cep">CEP</label>
-                                    <input type="text" id="cep" name="cep" placeholder="00000-000" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="estado">Estado</label>
-                                    <input type="text" id="estado" name="estado" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="cidade">Cidade</label>
-                                    <input type="text" id="cidade" name="cidade" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="bairro">Bairro</label>
-                                    <input type="text" id="bairro" name="bairro" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="rua">Rua</label>
-                                    <input type="text" id="rua" name="rua" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="numero">Número</label>
-                                    <input type="text" id="numero" name="numero" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="complemento">Complemento</label>
-                                    <input type="text" id="complemento" name="complemento">
-                                </div>
+                                <div class="form-group"><label>País</label><input type="text" id="pais" name="pais" value="Brasil" required></div>
+                                <div class="form-group"><label>CEP</label><input type="text" id="cep" name="cep" required></div>
+                                <div class="form-group"><label>Estado</label><input type="text" id="estado" name="estado" required></div>
+                                <div class="form-group"><label>Cidade</label><input type="text" id="cidade" name="cidade" required></div>
+                                <div class="form-group"><label>Bairro</label><input type="text" id="bairro" name="bairro" required></div>
+                                <div class="form-group"><label>Rua</label><input type="text" id="rua" name="rua" required></div>
+                                <div class="form-group"><label>Número</label><input type="text" id="numero" name="numero" required></div>
+                                <div class="form-group"><label>Complemento</label><input type="text" id="complemento" name="complemento"></div>
                                 <div class="form-group full-width">
-                                    <label for="observacoes">Observações</label>
-                                    <textarea id="observacoes" name="observacoes" rows="2"></textarea>
-                                </div>
-                                <div class="form-group full-width form-actions">
                                     <button type="submit" class="btn btn-primary">Salvar Endereço</button>
                                     <button type="button" class="btn btn-secondary" id="cancelarEndereco">Cancelar</button>
                                 </div>
@@ -180,47 +176,53 @@
                         </div>
 
                         <div id="listaEnderecos" class="lista-items">
-                            <!-- Endereços carregados via JS -->
+                            <p style="color: #666; font-style: italic;">Nenhum endereço cadastrado.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- ABA 3: Cartões de Crédito -->
-                <div id="tabCartoes" class="tab-content">
+                    <div class="content-card" style="margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h2 style="margin: 0;">Meus Telefones</h2>
+                            <button class="btn btn-secondary" id="btnNovoTelefone" style="border: 1px solid #0056b3; background: transparent; color: #0056b3;">+ Novo Telefone</button>
+                        </div>
+
+                        <div id="formNovoTelefone" class="form-container" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <form id="formTelefone" class="form-grid-2">
+                                <input type="hidden" id="telefoneId" name="id">
+                                <div class="form-group"><label>DDD</label><input type="text" id="dddForm" name="ddd" maxlength="2" required></div>
+                                <div class="form-group"><label>Número</label><input type="text" id="numeroTelefone" name="numero" required></div>
+                                <div class="form-group full-width form-actions">
+                                    <button type="submit" class="btn btn-primary">Salvar Telefone</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelarTelefone">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div id="listaTelefones" class="lista-items">
+                            <p style="color: #666; font-style: italic;">Nenhum telefone cadastrado.</p>
+                        </div>
+                    </div>
+
                     <div class="content-card">
-                        <h2>Meus Cartões de Crédito</h2>
-                        <button class="btn btn-primary" id="btnNovoCartao">+ Novo Cartão</button>
-                        
-                        <div id="formNovoCartao" class="form-container" style="display:none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h2 style="margin: 0;">Cartões de Crédito</h2>
+                            <button class="btn btn-secondary" id="btnNovoCartao" style="border: 1px solid #0056b3; background: transparent; color: #0056b3;">+ Novo Cartão</button>
+                        </div>
+
+                        <div id="formNovoCartao" class="form-container" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                             <form id="formCartao" class="form-grid-2">
                                 <input type="hidden" id="cartaoId" name="id">
-                                <div class="form-group full-width">
-                                    <label for="numeroCartao">Número do Cartão</label>
-                                    <input type="text" id="numeroCartao" name="numeroCartao" placeholder="0000 0000 0000 0000" maxlength="19" required>
-                                </div>
+                                <div class="form-group full-width"><label>Número do Cartão</label><input type="text" id="numeroCartao" name="numeroCartao" required></div>
+                                <div class="form-group"><label>Titular</label><input type="text" id="nomeTitular" name="nomeTitular" required></div>
                                 <div class="form-group">
-                                    <label for="nomeTitular">Nome do Titular</label>
-                                    <input type="text" id="nomeTitular" name="nomeTitular" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="bandeira">Bandeira</label>
+                                    <label>Bandeira</label>
                                     <select id="bandeira" name="bandeira" required>
-                                        <option value="">Selecione</option>
                                         <option value="VISA">Visa</option>
                                         <option value="MASTERCARD">Mastercard</option>
-                                        <option value="AMERICAN_EXPRESS">American Express</option>
-                                        <option value="ELO">Elo</option>
-                                        <option value="HIPERCARD">Hipercard</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="dataValidade">Validade (MM/YY)</label>
-                                    <input type="text" id="dataValidade" name="dataValidade" placeholder="12/25" maxlength="5" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="codigoSeguranca">Código de Segurança</label>
-                                    <input type="text" id="codigoSeguranca" name="codigoSeguranca" placeholder="CVV" maxlength="4" required>
-                                </div>
+                                <div class="form-group"><label>Validade</label><input type="text" id="dataValidade" name="dataValidade" required></div>
+                                <div class="form-group"><label>CVV</label><input type="text" id="codigoSeguranca" name="codigoSeguranca" required></div>
                                 <div class="form-group full-width form-actions">
                                     <button type="submit" class="btn btn-primary">Salvar Cartão</button>
                                     <button type="button" class="btn btn-secondary" id="cancelarCartao">Cancelar</button>
@@ -229,7 +231,7 @@
                         </div>
 
                         <div id="listaCartoes" class="lista-items">
-                            <!-- Cartões carregados via JS -->
+                            <p style="color: #666; font-style: italic;">Nenhum cartão cadastrado.</p>
                         </div>
                     </div>
                 </div>
@@ -295,6 +297,27 @@
         <!-- =====================================================================
                                     VISÃO ADMIN
              ===================================================================== -->
+        <section id="tabGerenciarClientes" class="tab-content active">
+            <div class="header-acoes">
+                <h2>Gestão de Clientes</h2>
+                <button onclick="AdminModule.carregarClientes()" class="btn-refresh">🔄 Atualizar Lista</button>
+            </div>
+
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>CPF</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+                </thead>
+                <tbody id="listaClientesAdmin">
+                </tbody>
+            </table>
+        </section>
+
         <section id="viewAdmin" class="view-container" style="display:none;">
             <!-- Dashboard Admin -->
             <div class="dashboard-admin">

@@ -1,5 +1,6 @@
 package br.com.nomadwear.service;
 
+import br.com.nomadwear.entities.Cliente;
 import br.com.nomadwear.entities.Telefone;
 import br.com.nomadwear.repository.TelefoneRepository;
 import org.springframework.stereotype.Service;
@@ -12,52 +13,39 @@ import java.util.UUID;
 public class TelefoneService {
 
     private final TelefoneRepository telefoneRepository;
+    private final ClienteService clienteService;
 
-    public TelefoneService(TelefoneRepository telefoneRepository) {
+    public TelefoneService(TelefoneRepository telefoneRepository, ClienteService clienteService) {
         this.telefoneRepository = telefoneRepository;
+        this.clienteService = clienteService;
     }
 
-    /**
-     * Cria um novo telefone
-     */
     @Transactional
-    public Telefone criar(Telefone telefone) {
+    public Telefone criar(UUID clienteId, Telefone telefone) {
+        Cliente cliente = clienteService.buscarPorId(clienteId);
+        telefone.setCliente(cliente); // 👈 associa o cliente
         validarTelefone(telefone);
         return telefoneRepository.save(telefone);
     }
 
-    /**
-     * Lista todos os telefones
-     */
-    public List<Telefone> listarTodos() {
-        return telefoneRepository.findAll();
+    public List<Telefone> listarPorCliente(UUID clienteId) {
+        return telefoneRepository.findByClienteId(clienteId); // 👈 filtra pelo cliente
     }
 
-    /**
-     * Busca telefone por ID
-     */
     public Telefone buscarPorId(UUID id) {
         return telefoneRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Telefone não encontrado com ID: " + id));
     }
 
-    /**
-     * Atualiza um telefone existente
-     */
     @Transactional
     public Telefone atualizar(UUID id, Telefone telefoneAtualizado) {
         Telefone telefone = buscarPorId(id);
         validarTelefone(telefoneAtualizado);
-
         telefone.setDdd(telefoneAtualizado.getDdd());
         telefone.setNumero(telefoneAtualizado.getNumero());
-
         return telefoneRepository.save(telefone);
     }
 
-    /**
-     * Deleta um telefone
-     */
     @Transactional
     public void deletar(UUID id) {
         if (!telefoneRepository.existsById(id)) {
@@ -66,16 +54,10 @@ public class TelefoneService {
         telefoneRepository.deleteById(id);
     }
 
-    /**
-     * Valida dados obrigatórios do telefone
-     */
     private void validarTelefone(Telefone telefone) {
-        if (telefone.getDdd() == null || telefone.getDdd().isBlank()) {
+        if (telefone.getDdd() == null || telefone.getDdd().isBlank())
             throw new IllegalArgumentException("DDD é obrigatório");
-        }
-
-        if (telefone.getNumero() == null || telefone.getNumero().isBlank()) {
+        if (telefone.getNumero() == null || telefone.getNumero().isBlank())
             throw new IllegalArgumentException("Número é obrigatório");
-        }
     }
 }

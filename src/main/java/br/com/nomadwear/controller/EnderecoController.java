@@ -39,11 +39,9 @@ public class EnderecoController {
         return ResponseEntity.ok(enderecoService.atualizar(id, enderecoAtualizado));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(
-            @PathVariable UUID clienteId,
-            @PathVariable UUID id) {
-        enderecoService.deletar(id);
+    @DeleteMapping("/{enderecoId}") // ✅ Verifique se não há duplicatas aqui
+    public ResponseEntity<Void> deletar(@PathVariable UUID clienteId, @PathVariable UUID enderecoId) {
+        enderecoService.deletar(enderecoId);
         return ResponseEntity.noContent().build();
     }
 }

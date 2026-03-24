@@ -56,10 +56,14 @@ public class EnderecoService {
 
     @Transactional
     public void deletar(UUID id) {
-        if (!enderecoRepository.existsById(id)) {
-            throw new IllegalArgumentException("Endereço não encontrado com ID: " + id);
+        Endereco endereco = enderecoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Endereço não encontrado"));
+
+        if (endereco.getCliente() != null) {
+            endereco.getCliente().getEnderecos().remove(endereco);
         }
-        enderecoRepository.deleteById(id);
+
+        enderecoRepository.delete(endereco);
     }
 
     private void validarEndereco(Endereco endereco) {
