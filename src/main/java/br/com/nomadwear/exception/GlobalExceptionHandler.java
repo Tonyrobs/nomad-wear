@@ -15,9 +15,7 @@
     @ControllerAdvice
     public class GlobalExceptionHandler {
 
-        /**
-         * Trata exceções de validação (dto/entidade)
-         */
+        // Trata exceções de validação
         @ExceptionHandler(MethodArgumentNotValidException.class)
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -36,9 +34,7 @@
             return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        /**
-         * Trata exceções de argumentos inválidos (negócio)
-         */
+        // Trata exceções de argumentos inválidos
         @ExceptionHandler(IllegalArgumentException.class)
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
@@ -52,9 +48,7 @@
             return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        /**
-         * Trata exceções gerais não capturadas
-         */
+         //Trata exceções gerais não capturada
         @ExceptionHandler(Exception.class)
         @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
         public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
@@ -67,9 +61,8 @@
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        /**
-         * Trata exceções de recurso não encontrado
-         */
+
+         // Trata exceções de recurso não encontrado
         @ExceptionHandler(NoSuchElementException.class)
         @ResponseStatus(HttpStatus.NOT_FOUND)
         public ResponseEntity<ErrorResponse> handleNotFoundException(NoSuchElementException ex) {

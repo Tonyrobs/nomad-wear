@@ -296,13 +296,29 @@
                                     <div class="form-group" style="margin-bottom: 10px;">
                                         <label>Endereço de Entrega:</label>
                                         <select id="select-endereco" style="width: 100%; padding: 8px;">
-                                            <option value="COLOQUE-UUID-ENDERECO">Rua da Fatec, 123 - Arujá</option>
+                                            <option value="COLOQUE-UUID-ENDERECO">Rua da Fatec, 123</option>
                                         </select>
+                                    </div>
+
+                                    <div class="secao-frete-dinamico" style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 5px; border: 1px solid #ddd;">
+                                        <h4>Frete e Entrega</h4>
+                                        <div id="info-frete-dinamico" style="color: #666;">
+                                            <em>Selecione um endereço de entrega para calcularmos o frete.</em>
+                                        </div>
                                     </div>
 
                                     <div class="form-group" style="margin-bottom: 15px;">
                                         <label>Cupom de Desconto:</label>
                                         <input type="text" id="input-cupom" placeholder="Ex: BEMVINDO10" style="width: 100%; padding: 8px;">
+                                    </div>
+
+                                    <div class="secao-cupom-troca" style="margin: 15px 0; padding: 10px; background: #eef8eb; border-radius: 5px; border: 1px solid #c3e6cb;">
+                                        <h4>Cupom de Troca</h4>
+                                        <div style="display: flex; gap: 10px;">
+                                            <input type="text" id="input-cupom-troca" placeholder="Ex: TROCA50" style="flex: 1; padding: 8px;">
+                                            <button type="button" onclick="adicionarCupomTroca()" style="width: 100%; padding: 8px;">Adicionar</button>
+                                        </div>
+                                        <div id="lista-cupons-troca" style="margin-top: 10px; color: #155724; font-weight: bold; font-size: 14px;"></div>
                                     </div>
 
                                     <!-- DEPOIS - pelo esse: -->
@@ -502,7 +518,6 @@
                             </tr>
                         </thead>
                         <tbody id="tabelaProdutos">
-                            <!-- Produtos carregados via JS (mock) -->
                         </tbody>
                     </table>
                 </div>

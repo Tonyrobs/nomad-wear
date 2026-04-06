@@ -14,13 +14,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Libera o CORS (Avisa que as regras do seu CorsConfig são válidas)
+                // CORS
                 .cors(Customizer.withDefaults())
 
-                // 2. Desliga a proteção CSRF (Essencial para APIs REST não bloquearem os POSTs)
+                // Proteção CSRF
                 .csrf(csrf -> csrf.disable())
 
-                // 3. Libera TODAS as rotas sem pedir senha (ideal para a fase de testes)
+                // Libera sem pedir senha
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 );

@@ -22,7 +22,6 @@ public class Cupom {
     @Enumerated(EnumType.STRING)
     private TipoCupom tipo;
 
-    // Construtor vazio (obrigatório para o JPA)
     public Cupom() {}
 
     public Cupom(String codigo, BigDecimal valorDesconto, Boolean ativo, TipoCupom tipo) {

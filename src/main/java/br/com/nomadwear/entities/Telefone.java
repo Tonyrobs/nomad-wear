@@ -16,7 +16,7 @@ public class Telefone {
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     @JsonIgnore
-    private Cliente cliente;  // 👈 campo que estava faltando
+    private Cliente cliente;
 
     @NotBlank(message = "DDD é obrigatório")
     private String ddd;

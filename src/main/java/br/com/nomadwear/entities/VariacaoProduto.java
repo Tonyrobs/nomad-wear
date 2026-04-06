@@ -29,7 +29,7 @@ public class VariacaoProduto {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Código único do SKU no sistema (ex: "NW-CAM-001-M-PRETO") — RNF0021
+    // Código único do SKU no sistema
     @NotBlank(message = "O SKU é obrigatório")
     @Column(unique = true, nullable = false)
     private String sku;
@@ -68,7 +68,7 @@ public class VariacaoProduto {
         this.ativa = quantidadeEstoque > 0;
     }
 
-    // Dá baixa no estoque (RF0053) — lança exceção se insuficiente
+    // Dá baixa no estoque
     public void darBaixa(int quantidade) {
         if (quantidade > this.quantidadeEstoque) {
             throw new IllegalArgumentException(
@@ -82,7 +82,7 @@ public class VariacaoProduto {
         }
     }
 
-    // Reentrada em estoque após troca (RF0054)
+    // Reentrada em estoque após troca
     public void reentrarEstoque(int quantidade) {
         this.quantidadeEstoque += quantidade;
         this.ativa = true;

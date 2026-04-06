@@ -32,6 +32,8 @@ public class PedidoRequestDTO {
 
     private TipoPagamento tipoPagamento;
 
+    private java.util.List<String> cuponsTroca;
+
     public PedidoRequestDTO() {}
 
     // Getters e Setters
@@ -62,5 +64,13 @@ public class PedidoRequestDTO {
 
     public void setTipoPagamento(TipoPagamento tipoPagamento) {
         this.tipoPagamento = tipoPagamento;
+    }
+
+    public java.util.List<String> getCuponsTroca() {
+        return cuponsTroca;
+    }
+
+    public void setCuponsTroca(java.util.List<String> cuponsTroca) {
+        this.cuponsTroca = cuponsTroca;
     }
 }

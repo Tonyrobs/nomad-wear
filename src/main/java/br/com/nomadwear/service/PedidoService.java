@@ -23,22 +23,24 @@ public class PedidoService {
     private final VariacaoProdutoRepository variacaoRepository;
     private final CupomRepository cupomRepository;
     private final CartaoCreditoRepository cartaoRepository;
+    private final CupomTrocaRepository cupomTrocaRepository;
 
-    // Injeção de dependências via construtor
+
     public PedidoService(PedidoRepository pedidoRepository, ClienteRepository clienteRepository,
                          EnderecoRepository enderecoRepository, VariacaoProdutoRepository variacaoRepository,
-                         CupomRepository cupomRepository, CartaoCreditoRepository cartaoRepository) {
+                         CupomRepository cupomRepository, CartaoCreditoRepository cartaoRepository, CupomTrocaRepository cupomTrocaRepository) {
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.enderecoRepository = enderecoRepository;
         this.variacaoRepository = variacaoRepository;
         this.cupomRepository = cupomRepository;
         this.cartaoRepository = cartaoRepository;
+        this.cupomTrocaRepository = cupomTrocaRepository;
     }
 
     @Transactional
     public Pedido realizarCompra(PedidoRequestDTO dto) {
-        // 1. Buscar Cliente e Endereço
+        // Buscar Cliente e Endereço
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
                 .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado."));
 
@@ -52,7 +54,7 @@ public class PedidoService {
         pedido.setStatus(StatusPedido.EM_PROCESSAMENTO);
         pedido.setValorFrete(dto.getValorFrete());
 
-        // 2. Processar Itens, Subtotal e abater o Stock
+        // Processar Itens, Subtotal e abater
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (ItemPedidoDTO itemDto : dto.getItens()) {
@@ -72,7 +74,7 @@ public class PedidoService {
         }
         pedido.setSubtotal(subtotal);
 
-        // 3. Aplicar Cupom (se existir)
+        // Aplicar Cupom
         BigDecimal valorDesconto = BigDecimal.ZERO;
         if (dto.getCupomCodigo() != null && !dto.getCupomCodigo().isBlank()) {
             Cupom cupom = cupomRepository.findByCodigo(dto.getCupomCodigo())
@@ -85,18 +87,45 @@ public class PedidoService {
             valorDesconto = cupom.getValorDesconto();
         }
 
-        // 4. Calcular Valor Total Final (Subtotal + Frete - Desconto)
+        // Calcular Valor Total Inicial
         BigDecimal valorTotal = subtotal.add(dto.getValorFrete()).subtract(valorDesconto);
-        // Garantir que o valor não fica negativo
         if (valorTotal.compareTo(BigDecimal.ZERO) < 0) valorTotal = BigDecimal.ZERO;
         pedido.setValorTotal(valorTotal);
 
-        // 5. Validar Pagamentos
-        // Verifica a forma de pagamento que chegou do Frontend
+
+        // ABATER CUPONS DE TROCA
+        // ==========================================
+        BigDecimal saldoAPagar = valorTotal; // Começa com o total do pedido
+
+        if (dto.getCuponsTroca() != null && !dto.getCuponsTroca().isEmpty()) {
+            for (String codigoTroca : dto.getCuponsTroca()) {
+                CupomTroca troca = cupomTrocaRepository.findByCodigo(codigoTroca)
+                        .orElseThrow(() -> new IllegalArgumentException("Cupom de troca não encontrado: " + codigoTroca));
+
+                if (troca.isUsado()) {
+                    throw new IllegalArgumentException("O cupom de troca " + codigoTroca + " já foi utilizado.");
+                }
+
+                // Subtrai o valor do cupom de troca do que o cliente ainda deve
+                saldoAPagar = saldoAPagar.subtract(troca.getValor());
+
+                // Marca como usado para ele não usar de novo no futuro
+                troca.setUsado(true);
+            }
+        }
+
+        // Se o crédito de troca for maior que o pedido, o saldo a pagar no cartão zera
+        if (saldoAPagar.compareTo(BigDecimal.ZERO) < 0) {
+            saldoAPagar = BigDecimal.ZERO;
+
+        }
+
+        // Validar Pagamentos
+        // ==================
         if (dto.getTipoPagamento() == br.com.nomadwear.entities.enums.TipoPagamento.CARTAO) {
 
             BigDecimal somaPagamentos = BigDecimal.ZERO;
-            for (PagamentoCartaoDTO pagDto : dto.getPagamentos()) {
+            for (br.com.nomadwear.dto.PagamentoCartaoDTO pagDto : dto.getPagamentos()) {
                 CartaoCredito cartao = cartaoRepository.findById(pagDto.getCartaoId())
                         .orElseThrow(() -> new IllegalArgumentException("Cartão não encontrado."));
 
@@ -106,22 +135,17 @@ public class PedidoService {
                 somaPagamentos = somaPagamentos.add(pagDto.getValorCobrado());
             }
 
-            // REGRA DE NEGÓCIO CRÍTICA DO CARTÃO
-            if (somaPagamentos.compareTo(valorTotal) != 0) {
-                throw new IllegalArgumentException("A soma dos valores nos cartões não confere com o total do pedido. Total exigido: " + valorTotal);
+            if (somaPagamentos.compareTo(saldoAPagar) != 0) {
+                throw new IllegalArgumentException("A soma dos cartões não confere. Você precisa pagar exatamente: R$ " + saldoAPagar);
             }
 
-            // Cartão aprova automaticamente na hora da compra
-            pedido.setStatus(StatusPedido.PAGAMENTO_APROVADO);
+            pedido.setStatus(br.com.nomadwear.entities.enums.StatusPedido.PAGAMENTO_APROVADO);
 
         } else if (dto.getTipoPagamento() == br.com.nomadwear.entities.enums.TipoPagamento.PIX) {
-
-            pedido.setStatus(StatusPedido.EM_PROCESSAMENTO);
-
-            System.out.println("Gerando cobrança PIX para o pedido...");
+            pedido.setStatus(br.com.nomadwear.entities.enums.StatusPedido.EM_PROCESSAMENTO);
         }
 
-        // 6. Guardar na Base de Dados
+        // Guardar na Base de Dados
         return pedidoRepository.save(pedido);
 
     }

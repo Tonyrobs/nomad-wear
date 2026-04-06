@@ -22,7 +22,6 @@ public class VariacaoProdutoController {
 
     @GetMapping
     public List<VariacaoProduto> listarTodas() {
-        // Vai no banco e devolve todos os SKUs com seus estoques reais!
         return repository.findAll();
     }
 }

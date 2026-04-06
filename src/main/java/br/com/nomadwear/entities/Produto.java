@@ -27,11 +27,9 @@ public class Produto {
 
     @Enumerated(EnumType.STRING)
     private CategoriaProduto categoria;
-
-    // Marca/fornecedor (ex: "NomadWear", "Parceiro X")
     private String marca;
 
-    // Valor de custo — usado para calcular preço de venda via grupo de precificação (RF0052)
+    // Valor de custo
     @NotNull(message = "O valor de custo é obrigatório")
     @Positive(message = "O valor de custo deve ser positivo")
     @Column(precision = 10, scale = 2)
@@ -41,7 +39,6 @@ public class Produto {
     @Column(precision = 10, scale = 2)
     private BigDecimal valorVenda;
 
-    // Percentual de markup do grupo de precificação (ex: 0.60 = 60%)
     @Column(precision = 5, scale = 4)
     private BigDecimal percentualPrecificacao;
 
@@ -72,7 +69,7 @@ public class Produto {
         calcularValorVenda();
     }
 
-    // RF0052 — calcula valor de venda com base no custo e no percentual de precificação
+    // Calcula valor de venda com base no custo e no percentual
     public void calcularValorVenda() {
         if (this.valorCusto != null && this.percentualPrecificacao != null) {
             this.valorVenda = this.valorCusto.multiply(

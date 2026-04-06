@@ -45,7 +45,6 @@ public class ClienteController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody br.com.nomadwear.dto.LoginRequestDTO loginRequest) {
 
-        // Usando os GETTERS em vez de acessar a variável privada direto
         if (loginRequest.getEmail() == null || loginRequest.getEmail().isEmpty()) {
             return ResponseEntity.badRequest().body("Email é obrigatório");
         }
@@ -53,7 +52,7 @@ public class ClienteController {
             return ResponseEntity.badRequest().body("Senha é obrigatória");
         }
 
-        // Buscar cliente pelo email usando getEmail()
+        // Buscar cliente pelo email
         var clienteOptional = repository.findByEmail(loginRequest.getEmail());
 
         if (clienteOptional.isEmpty()) {
@@ -62,7 +61,7 @@ public class ClienteController {
 
         var cliente = clienteOptional.get();
 
-        // Validar senha usando getSenha()
+        // Validar senha
         if (!passwordEncoder.matches(loginRequest.getSenha(), cliente.getSenha())) {
             return ResponseEntity.status(401).body("Email ou senha incorretos");
         }
