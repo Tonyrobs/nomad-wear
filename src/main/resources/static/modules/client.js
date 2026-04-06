@@ -91,7 +91,7 @@ const ClientModule = {
 
         try {
             // 📌 Fazer login com endpoint dedicado
-            const response = await fetch('http://localhost:8080/clientes/login', {
+            const response = await fetch('https://nomad-wear-web.onrender.com/clientes/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -131,7 +131,7 @@ const ClientModule = {
             dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 
             try {
-                const response = await fetch('http://localhost:8080/clientes', {
+                const response = await fetch('https://nomad-wear-web.onrender.com/clientes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -176,7 +176,7 @@ const ClientModule = {
     async deletarConta() {
             const id = this.state.usuarioLogado.id;
             try {
-                const response = await fetch(`http://localhost:8080/clientes/${id}`, { method: 'DELETE' });
+                const response = await fetch(`https://nomad-wear-web.onrender.com/clientes/${id}`, { method: 'DELETE' });
 
                 if (!response.ok) {
                     const erroTexto = await response.text();
@@ -239,7 +239,7 @@ const ClientModule = {
         dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 
         try {
-            const response = await fetch(`http://localhost:8080/clientes/${id}`, {
+            const response = await fetch(`https://nomad-wear-web.onrender.com/clientes/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -276,7 +276,7 @@ const ClientModule = {
             }
 
             try {
-                const response = await fetch(`http://localhost:8080/clientes/${id}/senha`, {
+                const response = await fetch(`https://nomad-wear-web.onrender.com/clientes/${id}/senha`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

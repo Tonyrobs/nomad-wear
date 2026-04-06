@@ -20,7 +20,7 @@ const AdminModule = {
     async carregarClientes() {
         try {
             console.log("Buscando clientes no banco...");
-            const response = await fetch('http://localhost:8080/clientes');
+            const response = await fetch('https://nomad-wear-web.onrender.com/clientes');
             if (!response.ok) throw new Error('Erro ao buscar clientes');
 
             const clientes = await response.json();
@@ -65,7 +65,7 @@ const AdminModule = {
         if (!confirm(`Deseja realmente ${acao} este cliente?`)) return;
 
         try {
-            const response = await fetch(`http://localhost:8080/clientes/${id}/${acao}`, {
+            const response = await fetch(`https://nomad-wear-web.onrender.com/clientes/${id}/${acao}`, {
                 method: 'PUT'
             });
 

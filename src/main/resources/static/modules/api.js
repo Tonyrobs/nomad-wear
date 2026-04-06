@@ -13,8 +13,10 @@
  * ================================================================
  */
 
+const BASE_URL = "https://nomad-wear-web.onrender.com";
+
 const API = {
-    BASE_URL: 'http://localhost:8080',
+    BASE_URL: "https://nomad-wear-web.onrender.com",
     TIMEOUT: 5000,
 
     async request(endpoint, options = {}) {
@@ -168,7 +170,7 @@ const API = {
 // ================================================================
 window.enviarPedidoCheckout = async (pedidoData) => {
     try {
-        const response = await fetch('http://localhost:8080/pedidos', {
+        const response = await fetch('https://nomad-wear-web.onrender.com/pedidos', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
