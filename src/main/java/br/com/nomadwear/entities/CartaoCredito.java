@@ -5,10 +5,6 @@ import java.util.UUID;
 
 import br.com.nomadwear.entities.enums.BandeiraCartao;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.YearMonthDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.YearMonthSerializer;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 

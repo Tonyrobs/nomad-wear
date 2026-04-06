@@ -11,15 +11,15 @@
     <header class="header">
         <div class="header-container">
             <div class="logo">
-                <h1>🧳 NomadWear</h1>
+                <h1>NomadWear</h1>
                 <p class="tagline">Moda para Viajantes</p>
             </div>
             <nav class="nav-toggle">
                 <button class="toggle-btn active" data-view="cliente">
-                    👤 Cliente
+                    Cliente
                 </button>
                 <button class="toggle-btn" data-view="admin">
-                    ⚙️ Admin
+                    Admin
                 </button>
             </nav>
             <div class="user-menu">
@@ -83,6 +83,7 @@
                     <button class="tab-btn active" data-tab="minha-conta">👤 Minha Conta</button>
                     <button class="tab-btn" data-tab="loja">🛍️ Loja</button>
                     <button class="tab-btn" data-tab="carrinho">🛒 Carrinho</button>
+                    <button class="tab-btn" data-tab="meus-pedidos">📦 Meus Pedidos</button>
                 </div>
 
                 <div id="tabMinhaConta" class="tab-content active">
@@ -284,41 +285,115 @@
                             <div class="carrinho-resumo">
                                 <h3>Resumo do Pedido</h3>
                                 <p><strong>Subtotal:</strong> R$ <span id="subtotal">0.00</span></p>
-                                <p><strong>Frete:</strong> R$ <span id="frete">0.00</span></p>
+                                <p><strong>Frete:</strong> R$ <span id="frete">20.00</span></p>
                                 <p class="total"><strong>Total:</strong> R$ <span id="total">0.00</span></p>
-                                <button class="btn btn-primary btn-block">Finalizar Compra</button>
+
+                                <div class="checkout-fields" style="text-align: left; margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
+
+                                    <input type="hidden" id="input-cliente-id" value="9cd53338-982f-4153-a4b8-3a18ddc0706a">
+                                    <input type="hidden" id="input-sku-1" value="210b45bc-095f-495f-b375-a8c13138b2ed">
+
+                                    <div class="form-group" style="margin-bottom: 10px;">
+                                        <label>Endereço de Entrega:</label>
+                                        <select id="select-endereco" style="width: 100%; padding: 8px;">
+                                            <option value="COLOQUE-UUID-ENDERECO">Rua da Fatec, 123 - Arujá</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label>Cupom de Desconto:</label>
+                                        <input type="text" id="input-cupom" placeholder="Ex: BEMVINDO10" style="width: 100%; padding: 8px;">
+                                    </div>
+
+                                    <!-- DEPOIS - pelo esse: -->
+                                    <h4 style="margin-bottom: 10px;">Forma de Pagamento</h4>
+
+                                    <div style="margin-bottom: 10px;">
+                                        <label>Tipo de Pagamento:</label>
+                                        <select id="select-tipo-pagamento" style="width: 100%; padding: 8px;" onchange="alternarTipoPagamento()">
+                                            <option value="CARTAO">💳 Cartão de Crédito</option>
+                                            <option value="PIX">📱 Pix</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Seção Cartão -->
+                                    <div id="secaoCartao">
+                                        <div style="margin-bottom: 10px;">
+                                            <label style="font-size: 0.9em;">Cartão Principal (R$):</label>
+                                            <div style="display: flex; gap: 10px;">
+                                                <select id="select-cartao-1" style="flex: 1; padding: 8px;">
+                                                    <option value="">Selecione um cartão</option>
+                                                </select>
+                                                <input type="number" id="valor-cartao-1" value="0.00" step="0.01" style="width: 90px; padding: 8px;">
+                                            </div>
+                                        </div>
+                                        <div style="margin-bottom: 20px;">
+                                            <label style="font-size: 0.9em;">Segundo Cartão (R$):</label>
+                                            <div style="display: flex; gap: 10px;">
+                                                <select id="select-cartao-2" style="flex: 1; padding: 8px;">
+                                                    <option value="">Não dividir</option>
+                                                </select>
+                                                <input type="number" id="valor-cartao-2" value="0.00" step="0.01" style="width: 90px; padding: 8px;">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Seção Pix -->
+                                    <div id="secaoPix" style="display:none;">
+                                        <div style="background: #1a7f3c; border: 2px solid #145d2c; border-radius: 8px; padding: 15px; margin-bottom: 15px; text-align: center; color: white;">
+                                            <p style="font-size: 1.2em; margin: 0 0 8px 0;"> Pix</p>
+                                            <p style="margin: 0 0 4px 0;">Chave Pix da loja:</p>
+                                            <strong style="font-size: 1.1em;">pagamentos@nomadwear.com.br</strong>
+                                            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.9;">Após o pagamento, informe sua chave Pix:</p>
+                                            <input type="text" id="input-chave-pix" placeholder="Sua chave Pix (CPF, e-mail ou telefone)"
+                                                   style="width: 100%; padding: 8px; margin-top: 8px; border: none; border-radius: 4px; box-sizing: border-box;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="checkout-btn" class="btn btn-primary btn-block">Finalizar Compra</button>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- ABA 6: Meus Pedidos --> <!-- 👈 adicione aqui -->
+                <div id="tabMeusPedidos" class="tab-content">
+                    <div class="content-card">
+                        <h2>📦 Meus Pedidos</h2>
+                        <div id="listaPedidos" class="lista-items">
+                            <p style="color: #666; font-style: italic;">Nenhum pedido encontrado.</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
 
         <!-- =====================================================================
                                     VISÃO ADMIN
              ===================================================================== -->
-        <section id="tabGerenciarClientes" class="tab-content active">
-            <div class="header-acoes">
-                <h2>Gestão de Clientes</h2>
-                <button onclick="AdminModule.carregarClientes()" class="btn-refresh">🔄 Atualizar Lista</button>
+        <section id="viewAdmin" class="view-container" style="display:none;">
+
+            <!-- Tabela de clientes -->
+            <div id="tabGerenciarClientes" class="content-card">
+                <div class="header-acoes">
+                    <h2>Gestão de Clientes</h2>
+                    <button onclick="AdminModule.carregarClientes()" class="btn-refresh">🔄 Atualizar Lista</button>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>CPF</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody id="listaClientesAdmin"></tbody>
+                </table>
             </div>
 
-            <table class="admin-table">
-                <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>E-mail</th>
-                    <th>CPF</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-                </thead>
-                <tbody id="listaClientesAdmin">
-                </tbody>
-            </table>
-        </section>
-
-        <section id="viewAdmin" class="view-container" style="display:none;">
             <!-- Dashboard Admin -->
             <div class="dashboard-admin">
                 <h2>Dashboard Administrativo</h2>

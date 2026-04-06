@@ -103,12 +103,13 @@ const API = {
     },
 
     async deletarEndereco(clienteId, enderecoId) {
-            const response = await fetch(`${this.BASE_URL}/clientes/${clienteId}/enderecos/${enderecoId}`, {
-                method: 'DELETE'
-            });
-            if (!response.ok) throw new Error('Erro ao deletar endereço');
-            return true;
-        },
+        const response = await fetch(`${this.BASE_URL}/clientes/${clienteId}/enderecos/${enderecoId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Erro ao deletar endereço');
+        return true;
+    },
+
     async listarTelefones(clienteId) {
         return this.request(`/clientes/${clienteId}/telefones`, { method: 'GET' });
     },
@@ -131,25 +132,58 @@ const API = {
         return this.request(`/clientes/${clienteId}/telefones/${id}`, { method: 'DELETE' });
     },
 
-    async listarCartoes() {
-        return this.request('/cartoes', { method: 'GET' });
-    },
+  async listarCartoes(clienteId) {
+      return this.request(`/clientes/${clienteId}/cartoes`, { method: 'GET' });
+  },
 
-    async criarCartao(cartaoData) {
-        return this.request('/cartoes', {
+  async criarCartao(clienteId, cartaoData) {
+      return this.request(`/clientes/${clienteId}/cartoes`, {
+          method: 'POST',
+          body: JSON.stringify(cartaoData)
+      });
+  },
+
+  async atualizarCartao(clienteId, id, cartaoData) {
+      return this.request(`/clientes/${clienteId}/cartoes/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(cartaoData)
+      });
+  },
+
+  async deletarCartao(clienteId, id) {
+      return this.request(`/clientes/${clienteId}/cartoes/${id}`, { method: 'DELETE' });
+  },
+
+    async listarVariacoes() {
+         return this.request('/variacoes', { method: 'GET' }); // Busca os SKUs reais!
+        },
+
+    async listarPedidosCliente(clienteId) { // 👈 adicione aqui
+         return this.request(`/pedidos/cliente/${clienteId}`, { method: 'GET' });
+       },
+};
+
+// ================================================================
+// LÓGICA DO CHECKOUT (Tem que ficar FORA do objeto API)
+// ================================================================
+window.enviarPedidoCheckout = async (pedidoData) => {
+    try {
+        const response = await fetch('http://localhost:8080/pedidos', {
             method: 'POST',
-            body: JSON.stringify(cartaoData)
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pedidoData)
         });
-    },
 
-    async atualizarCartao(id, cartaoData) {
-        return this.request(`/cartoes/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(cartaoData)
-        });
-    },
+        if (!response.ok) {
+            const erro = await response.json();
+            throw new Error(erro.message || "Erro ao processar o pagamento.");
+        }
 
-    async deletarCartao(id) {
-        return this.request(`/cartoes/${id}`, { method: 'DELETE' });
+        return await response.json();
+    } catch (error) {
+        console.error("Erro no checkout:", error);
+        throw error;
     }
 };

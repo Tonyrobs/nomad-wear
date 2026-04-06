@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.UUID;
 
 import br.com.nomadwear.dto.AlterarSenhaDTO;
+import br.com.nomadwear.dto.LoginRequestDTO;
 import br.com.nomadwear.repository.ClienteRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,17 +27,48 @@ import jakarta.validation.Valid;
 public class ClienteController {
 
     private final ClienteService clienteService;
-    private final ClienteRepository repository; // Injetando o Repository corretamente
+    private final ClienteRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    public ClienteController(ClienteService clienteService, ClienteRepository repository) {
+    public ClienteController(ClienteService clienteService, ClienteRepository repository, PasswordEncoder passwordEncoder) {
         this.clienteService = clienteService;
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping
     public ResponseEntity<Cliente> cadastrar(@Valid @RequestBody Cliente cliente) {
         Cliente salvo = clienteService.cadastrar(cliente);
         return ResponseEntity.ok(salvo);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody br.com.nomadwear.dto.LoginRequestDTO loginRequest) {
+
+        // Usando os GETTERS em vez de acessar a variável privada direto
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email é obrigatório");
+        }
+        if (loginRequest.getSenha() == null || loginRequest.getSenha().isEmpty()) {
+            return ResponseEntity.badRequest().body("Senha é obrigatória");
+        }
+
+        // Buscar cliente pelo email usando getEmail()
+        var clienteOptional = repository.findByEmail(loginRequest.getEmail());
+
+        if (clienteOptional.isEmpty()) {
+            return ResponseEntity.status(401).body("Email ou senha incorretos");
+        }
+
+        var cliente = clienteOptional.get();
+
+        // Validar senha usando getSenha()
+        if (!passwordEncoder.matches(loginRequest.getSenha(), cliente.getSenha())) {
+            return ResponseEntity.status(401).body("Email ou senha incorretos");
+        }
+
+        // Login bem-sucedido
+        return ResponseEntity.ok(cliente);
     }
 
     @GetMapping
@@ -71,7 +104,6 @@ public class ClienteController {
 
     @PutMapping("/{id}/desativar")
     public ResponseEntity<Void> desativar(@PathVariable UUID id) {
-        System.out.println("LOG: Tentando desativar o cliente: " + id);
         clienteService.desativar(id);
         return ResponseEntity.noContent().build();
     }
@@ -85,11 +117,11 @@ public class ClienteController {
 
         var cliente = clienteOptional.get();
 
-        if (!cliente.getSenha().equals(dados.senhaAtual())) {
+        if (!passwordEncoder.matches(dados.senhaAtual(), cliente.getSenha())) {
             return ResponseEntity.badRequest().body("A senha atual está incorreta.");
         }
 
-        cliente.setSenha(dados.novaSenha());
+        cliente.setSenha(passwordEncoder.encode(dados.novaSenha()));
         repository.save(cliente);
 
         return ResponseEntity.ok().build();

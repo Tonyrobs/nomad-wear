@@ -1,7 +1,6 @@
 package br.com.nomadwear.entities;
 
 import br.com.nomadwear.entities.enums.Genero;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 

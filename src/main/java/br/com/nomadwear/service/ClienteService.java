@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import br.com.nomadwear.dto.ClienteAtualizarDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +15,11 @@ import br.com.nomadwear.repository.ClienteRepository;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public ClienteService(ClienteRepository clienteRepository) {
+    public ClienteService(ClienteRepository clienteRepository, PasswordEncoder passwordEncoder) {
         this.clienteRepository = clienteRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -32,6 +35,7 @@ public class ClienteService {
         }
         
         cliente.setAtivo(true);
+        cliente.setSenha(passwordEncoder.encode(cliente.getSenha()));
         return clienteRepository.save(cliente);
     }
 
@@ -73,7 +77,7 @@ public class ClienteService {
     @Transactional
     public void deletar(UUID id) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado com ID: " + id));
 
         clienteRepository.delete(cliente);
     }

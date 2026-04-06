@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/cartoes")
+@RequestMapping("/clientes/{clienteId}/cartoes")
 public class CartaoCreditoController {
 
     private final CartaoCreditoService cartaoCreditoService;
@@ -20,30 +20,29 @@ public class CartaoCreditoController {
     }
 
     @PostMapping
-    public ResponseEntity<CartaoCredito> criar(@Valid @RequestBody CartaoCredito cartao) {
-        CartaoCredito novo = cartaoCreditoService.criar(cartao);
-        return ResponseEntity.ok(novo);
+    public ResponseEntity<CartaoCredito> criar(
+            @PathVariable UUID clienteId,
+            @Valid @RequestBody CartaoCredito cartao) {
+        return ResponseEntity.ok(cartaoCreditoService.criar(clienteId, cartao));
     }
 
     @GetMapping
-    public ResponseEntity<List<CartaoCredito>> listarTodos() {
-        return ResponseEntity.ok(cartaoCreditoService.listarTodos());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<CartaoCredito> buscarPorId(@PathVariable UUID id) {
-        CartaoCredito cartao = cartaoCreditoService.buscarPorId(id);
-        return ResponseEntity.ok(cartao);
+    public ResponseEntity<List<CartaoCredito>> listar(@PathVariable UUID clienteId) {
+        return ResponseEntity.ok(cartaoCreditoService.listarPorCliente(clienteId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CartaoCredito> atualizar(@PathVariable UUID id, @Valid @RequestBody CartaoCredito cartaoAtualizado) {
-        CartaoCredito atualizado = cartaoCreditoService.atualizar(id, cartaoAtualizado);
-        return ResponseEntity.ok(atualizado);
+    public ResponseEntity<CartaoCredito> atualizar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id,
+            @Valid @RequestBody CartaoCredito cartaoAtualizado) {
+        return ResponseEntity.ok(cartaoCreditoService.atualizar(id, cartaoAtualizado));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
+    public ResponseEntity<Void> deletar(
+            @PathVariable UUID clienteId,
+            @PathVariable UUID id) {
         cartaoCreditoService.deletar(id);
         return ResponseEntity.noContent().build();
     }

@@ -24,7 +24,7 @@ const ClientModule = {
 
     // Inicializa o módulo cliente
     init() {
-        this.carregarProdutosMock();
+        this.carregarProdutosReais();
         this.configurarEventos();
     },
 
@@ -85,89 +85,93 @@ const ClientModule = {
      */
 
     async handleLogin(e) {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const dados = Object.fromEntries(formData);
-
-            try {
-                const response = await fetch('http://localhost:8080/clientes');
-                const clientes = await response.json();
-
-                const cliente = clientes.find(c => c.email === dados.email);
-
-                if (!cliente) {
-                    throw new Error('E-mail não cadastrado.');
-                }
-
-                console.log("Senha que veio do Banco:", cliente.senha);
-                console.log("Senha que você digitou:", dados.senha);
-
-                if (cliente.senha !== dados.senha) {
-                    throw new Error('Senha incorreta.');
-                }
-
-                console.log("SUCESSO: Cliente encontrado!", cliente);
-
-                this.state.usuarioLogado = cliente;
-                this.mostrarDashboardCliente();
-                this.carregarDadosCliente();
-                e.target.reset();
-                this.mostrarMensagem('Login realizado com sucesso!', 'success');
-
-            } catch (error) {
-                console.error("ERRO NO LOGIN:", error.message);
-                this.mostrarMensagem('Erro ao fazer login: ' + error.message, 'error');
-            }
-        },
-
-    async handleRegister(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const dados = Object.fromEntries(formData);
 
-        // Formata o CPF para 000.000.000-00 independente do que foi digitado
-        const cpfLimpo = dados.cpf.replace(/\D/g, '');
-        dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-
         try {
-            const response = await fetch('http://localhost:8080/clientes', {
+            // 📌 Fazer login com endpoint dedicado
+            const response = await fetch('http://localhost:8080/clientes/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    nome: dados.nome,
                     email: dados.email,
-                    senha: dados.senha,
-                    cpf: dados.cpf,
-                    dataNascimento: dados.dataNascimento,
-                    genero: dados.genero
+                    senha: dados.senha
                 })
             });
 
             if (!response.ok) {
-                const erro = await response.text();
-                throw new Error(erro);
+                const errorMsg = await response.text();
+                throw new Error(errorMsg || 'Email ou senha incorretos');
             }
 
-            const clienteSalvo = await response.json();
-            this.state.usuarioLogado = clienteSalvo;
-
-            if (dados.ddd && dados.telefone) {
-                        await API.criarTelefone(clienteSalvo.id, {
-                            ddd: dados.ddd,
-                            numero: dados.telefone
-                        });
-                    }
-
+            const cliente = await response.json();
+            
+            this.state.usuarioLogado = cliente;
             this.mostrarDashboardCliente();
+            this.carregarDadosCliente();
+            this.carregarPedidos();
             e.target.reset();
-            this.mostrarMensagem('Cadastro realizado com sucesso!', 'success');
+            this.mostrarMensagem('Login realizado com sucesso!', 'success');
 
         } catch (error) {
-            this.mostrarMensagem('Erro ao cadastrar: ' + error.message, 'error');
+            console.error('Erro no login:', error);
+            this.mostrarMensagem('Erro ao fazer login: ' + error.message, 'error');
         }
     },
+
+    async handleRegister(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const dados = Object.fromEntries(formData);
+
+            const cpfLimpo = dados.cpf.replace(/\D/g, '');
+            dados.cpf = cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+
+            try {
+                const response = await fetch('http://localhost:8080/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome: dados.nome,
+                        email: dados.email,
+                        senha: dados.senha,
+                        cpf: dados.cpf,
+                        dataNascimento: dados.dataNascimento,
+                        genero: dados.genero
+                    })
+                });
+
+                if (!response.ok) {
+                    const erro = await response.text();
+                    throw new Error(erro);
+                }
+
+                const clienteSalvo = await response.json();
+                this.state.usuarioLogado = clienteSalvo;
+
+                if (dados.ddd && dados.telefone) {
+                    try {
+                        await API.criarTelefone(clienteSalvo.id, { ddd: dados.ddd, numero: dados.telefone });
+                    } catch (err) {
+                        console.warn("Erro ao salvar telefone inicial", err);
+                    }
+                }
+
+                alert('Conta criada com sucesso! Redirecionando...');
+
+                // Faz a transição de tela corretamente
+                this.carregarDadosCliente();
+                this.mostrarDashboardCliente();
+                app.mudarAba('minha-conta');
+                e.target.reset();
+
+            } catch (error) {
+                alert('Erro ao cadastrar: ' + error.message);
+            }
+        },
 
     async deletarConta() {
             const id = this.state.usuarioLogado.id;
@@ -222,6 +226,7 @@ const ClientModule = {
         this.carregarEnderecos();
         this.carregarCartoes();
         this.carregarTelefones();
+        this.carregarPedidos();
     },
 
     async handleAtualizarDados(e) {
@@ -365,29 +370,29 @@ const ClientModule = {
     },
 
     async handleSalvarEndereco(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const dados = Object.fromEntries(formData);
-        const id = dados.id;
-        const clienteId = this.state.usuarioLogado.id; // 👈 adiciona
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const dados = Object.fromEntries(formData);
+            const id = dados.id;
+            const clienteId = this.state.usuarioLogado.id;
 
-        try {
-            if (id) {
-                await API.atualizarEndereco(clienteId, id, dados); // 👈 passa clienteId
-                this.mostrarMensagem('Endereço atualizado com sucesso!', 'success');
-                this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
-            } else {
-                await API.criarEndereco(clienteId, dados); // 👈 passa clienteId
-                this.mostrarMensagem('Endereço adicionado com sucesso!', 'success');
-                this.state.enderecos = await API.listarEnderecos(clienteId); // 👈 passa clienteId
+            try {
+                // Mandando "dados" direto, pois o seu Java (Endereco.java) já usa "rua", "cidade", etc!
+                if (id) {
+                    await API.atualizarEndereco(clienteId, id, dados);
+                    this.mostrarMensagem('Endereço atualizado com sucesso!', 'success');
+                } else {
+                    await API.criarEndereco(clienteId, dados);
+                    this.mostrarMensagem('Endereço adicionado com sucesso!', 'success');
+                }
+                this.state.enderecos = await API.listarEnderecos(clienteId);
+                this.renderizarEnderecos();
+                this.ocultarFormEndereco();
+            } catch (error) {
+                this.mostrarMensagem('Erro ao salvar endereço.', 'error');
+                console.error(error);
             }
-
-            this.renderizarEnderecos();
-            this.ocultarFormEndereco();
-        } catch (error) {
-            this.mostrarMensagem('Erro ao salvar endereço: ' + error.message, 'error');
-        }
-    },
+        },
     async deletarEndereco(id) {
             if (!confirm('Tem certeza que deseja remover este endereço?')) return;
 
@@ -461,28 +466,29 @@ const ClientModule = {
     },
 
     async handleSalvarTelefone(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const dados = Object.fromEntries(formData);
-        const id = dados.id;
-        const clienteId = this.state.usuarioLogado.id;
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const dados = Object.fromEntries(formData);
+            const id = dados.id;
+            const clienteId = this.state.usuarioLogado.id;
 
-        try {
-            if (id) {
-                await API.atualizarTelefone(clienteId, id, dados);
-                this.mostrarMensagem('Telefone atualizado com sucesso!', 'success');
-            } else {
-                await API.criarTelefone(clienteId, dados);
-                this.mostrarMensagem('Telefone adicionado com sucesso!', 'success');
+            try {
+                if (id) {
+                    await API.atualizarTelefone(clienteId, id, dados);
+                    this.mostrarMensagem('Telefone atualizado com sucesso!', 'success');
+                } else {
+                    await API.criarTelefone(clienteId, dados);
+                    this.mostrarMensagem('Telefone adicionado com sucesso!', 'success');
+                }
+
+                this.state.telefones = await API.listarTelefones(clienteId);
+                this.renderizarTelefones();
+                this.ocultarFormTelefone();
+            } catch (error) {
+                this.mostrarMensagem('Erro ao salvar telefone.', 'error');
+                console.error(error);
             }
-
-            this.state.telefones = await API.listarTelefones(clienteId);
-            this.renderizarTelefones();
-            this.ocultarFormTelefone();
-        } catch (error) {
-            this.mostrarMensagem('Erro ao salvar telefone: ' + error.message, 'error');
-        }
-    },
+        },
 
     deletarTelefoneConfirm(id) {
         if (confirm('Tem certeza que deseja deletar este telefone?')) {
@@ -519,8 +525,8 @@ const ClientModule = {
 
     async carregarCartoes() {
         try {
-            this.state.cartoes = await API.listarCartoes();
-
+            const clienteId = this.state.usuarioLogado.id; // 👈
+            this.state.cartoes = await API.listarCartoes(clienteId); // 👈
             this.renderizarCartoes();
         } catch (error) {
             console.error('Erro ao carregar cartões:', error);
@@ -577,41 +583,31 @@ const ClientModule = {
         const formData = new FormData(e.target);
         const dados = Object.fromEntries(formData);
         const id = dados.id || '';
+        const clienteId = this.state.usuarioLogado?.id; // 👈
+
+        if (!clienteId) {
+            this.mostrarMensagem('Você precisa estar logado.', 'error');
+            return;
+        }
 
         try {
-            console.log('Salvando cartão:', { id, dados });
-
-            // Validar número do cartão (apenas para UI, segurança real seria no backend)
-            if (!this.validarNumeroCartao(dados.numeroCartao)) {
-                throw new Error('Número de cartão inválido (13-19 dígitos)');
-            }
-
-            // Converter data de MM/YY para YYYY-MM (YearMonth do Java)
             dados.dataValidade = this.converterDataValidade(dados.dataValidade);
-            console.log('Data convertida:', dados.dataValidade);
 
             if (id) {
-                console.log('Atualizando cartão:', id);
-                const resposta = await API.atualizarCartao(id, dados);
-                console.log('Atualização bem-sucedida:', resposta);
+                await API.atualizarCartao(clienteId, id, dados); // 👈
                 this.mostrarMensagem('Cartão atualizado com sucesso!', 'success');
-                this.state.cartoes = await API.listarCartoes();
             } else {
-                console.log('Criando novo cartão');
-                const resposta = await API.criarCartao(dados);
-                console.log('Criação bem-sucedida:', resposta);
+                await API.criarCartao(clienteId, dados); // 👈
                 this.mostrarMensagem('Cartão adicionado com sucesso!', 'success');
-                this.state.cartoes = await API.listarCartoes();
             }
 
-            console.log('Cartões carregados:', this.state.cartoes);
+            this.state.cartoes = await API.listarCartoes(clienteId); // 👈
             this.renderizarCartoes();
             document.getElementById('formCartao').reset();
-            document.getElementById('cartaoId').value = '';
             this.ocultarFormCartao();
         } catch (error) {
-            console.error('Erro ao salvar cartão:', error);
             this.mostrarMensagem('Erro ao salvar cartão: ' + error.message, 'error');
+            console.error(error);
         }
     },
 
@@ -671,9 +667,10 @@ const ClientModule = {
     },
 
     async deletarCartao(id) {
+        const clienteId = this.state.usuarioLogado.id; // 👈
         try {
-            await API.deletarCartao(id);
-            this.state.cartoes = await API.listarCartoes();
+            await API.deletarCartao(clienteId, id); // 👈
+            this.state.cartoes = await API.listarCartoes(clienteId); // 👈
             this.renderizarCartoes();
             this.mostrarMensagem('Cartão deletado com sucesso!', 'success');
         } catch (error) {
@@ -686,58 +683,57 @@ const ClientModule = {
      * LOJA - PRODUTOS E CARRINHO
      * ================================================================
      */
+async carregarProdutosReais() {
+        try {
+            // Vai no Spring Boot e busca as variações reais do banco!
+            const variacoesDB = await API.listarVariacoes();
 
-    carregarProdutosMock() {
-        this.state.produtos = [
-            {
-                id: 'prod-1',
-                nome: 'Camiseta Premium Travel',
-                categoria: 'camisetas',
-                preco: 89.90,
-                descricao: 'Camiseta técnica perfeita para viagens',
-                estoque: 15,
+            // Converte os dados do Java para o formato que a sua tela espera
+            this.state.produtos = variacoesDB.map(v => ({
+                id: v.id, // O UUID real para o checkout!
+                nome: v.produto ? v.produto.nome : 'Camiseta Nomad',
+                categoria: v.produto && v.produto.categoria ? v.produto.categoria.toLowerCase() : 'camisetas',
+                preco: v.produto ? v.produto.valorVenda : 75.00,
+                descricao: `Tamanho ${v.tamanho} - Cor ${v.cor}`, // Mostra o tamanho e cor na tela
+                estoque: v.quantidadeEstoque, // O ESTOQUE DE VERDADE!
                 emoji: '👕'
-            },
-            {
-                id: 'prod-2',
-                nome: 'Calça Cargo Nomad',
-                categoria: 'calcas',
-                preco: 199.90,
-                descricao: 'Calça com múltiplos bolsos para viajantes',
-                estoque: 8,
-                emoji: '👖'
-            },
-            {
-                id: 'prod-3',
-                nome: 'Sneaker Conforto',
-                categoria: 'sapatos',
-                preco: 249.90,
-                descricao: 'Sapato confortável para longas caminhadas',
-                estoque: 12,
-                emoji: '👟'
-            },
-            {
-                id: 'prod-4',
-                nome: 'Mochila Viajante 40L',
-                categoria: 'mochilas',
-                preco: 399.90,
-                descricao: 'Mochila resistente com compartimentos inteligentes',
-                estoque: 5,
-                emoji: '🎒'
-            },
-            {
-                id: 'prod-5',
-                nome: 'Cinto de Segurança',
-                categoria: 'acessorios',
-                preco: 59.90,
-                descricao: 'Cinto RFID anti-roubo para documentos',
-                estoque: 20,
-                emoji: '⌛'
-            }
-        ];
+            }));
 
-        this.renderizarProdutos();
+            this.renderizarProdutos();
+
+        } catch (error) {
+            console.warn("Aviso: Não conseguiu buscar do banco. Usando produtos de mentira.", error);
+            // Se o Java estiver desligado ou der erro, ele mostra os falsos para a tela não ficar em branco
+            this.carregarProdutosMock();
+        }
     },
+
+carregarProdutosMock() {
+    this.state.produtos = [
+        {
+            id: '210b45bc-095f-495f-b375-a8c13138b2ed', // variacaoProdutoId PRETO M
+            produtoId: '590d0c11-4ffe-4ba0-86fb-6962fbf7ea...',
+            nome: 'Camiseta Nomad Classic - Preto M',
+            categoria: 'camisetas',
+            preco: 75.00,
+            descricao: 'Camiseta 100% algodão, perfeita para o dia a dia',
+            estoque: 50,
+            emoji: '👕'
+        },
+        {
+            id: '9cea8731-29b4-4b39-98ec-ad6df1a5dc53', // variacaoProdutoId BRANCO G
+            produtoId: '590d0c11-4ffe-4ba0-86fb-6962fbf7ea...',
+            nome: 'Camiseta Nomad Classic - Branco G',
+            categoria: 'camisetas',
+            preco: 75.00,
+            descricao: 'Camiseta 100% algodão, perfeita para o dia a dia',
+            estoque: 20,
+            emoji: '👕'
+        }
+    ];
+
+    this.renderizarProdutos();
+},
 
     renderizarProdutos(produtos = this.state.produtos) {
         const container = document.getElementById('vitrineProdutos');
@@ -854,6 +850,81 @@ const ClientModule = {
         this.atualizarCarrinho();
         this.mostrarMensagem('Produto removido do carrinho', 'success');
     },
+    // ================================================================
+    // PEDIDOS
+    // ================================================================
+
+    async carregarPedidos() {
+        try {
+            const clienteId = this.state.usuarioLogado.id;
+            const pedidos = await API.listarPedidosCliente(clienteId);
+            this.renderizarPedidos(pedidos);
+        } catch (error) {
+            console.error('Erro ao carregar pedidos:', error);
+        }
+    },
+
+    renderizarPedidos(pedidos) {
+        const container = document.getElementById('listaPedidos');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!pedidos || pedidos.length === 0) {
+            container.innerHTML = '<p style="color: #666; font-style: italic;">Nenhum pedido encontrado.</p>';
+            return;
+        }
+
+        pedidos.forEach(pedido => {
+            const data = new Date(pedido.dataPedido).toLocaleDateString('pt-BR');
+            const card = document.createElement('div');
+            card.style.cssText = `
+                border: 1px solid #dee2e6;
+                border-left: 4px solid #0056b3;
+                border-radius: 4px;
+                margin-bottom: 12px;
+                background: #fff;
+                overflow: hidden;
+            `;
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+                    <div>
+                        <span style="font-weight: 600; font-size: 0.95em; color: #212529;">Pedido #${pedido.idPedido.substring(0, 8).toUpperCase()}</span>
+                        <span style="color: #6c757d; font-size: 0.85em; margin-left: 12px;">📅 ${data}</span>
+                    </div>
+                    <span style="background: #e8f0fe; color: #0056b3; padding: 3px 10px; border-radius: 3px; font-size: 0.8em; font-weight: 600; letter-spacing: 0.3px;">
+                        ${pedido.status}
+                    </span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #dee2e6;">
+                            <th style="padding: 8px 16px; text-align: left; font-size: 0.82em; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Produto</th>
+                            <th style="padding: 8px 16px; text-align: center; font-size: 0.82em; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Qtd</th>
+                            <th style="padding: 8px 16px; text-align: right; font-size: 0.82em; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pedido.itens.map(item => `
+                            <tr style="border-bottom: 1px solid #f1f3f5;">
+                                <td style="padding: 10px 16px; font-size: 0.9em; color: #212529;">
+                                    ${item.nomeProduto}
+                                    <span style="color: #adb5bd; font-size: 0.8em; display: block;">${item.sku}</span>
+                                </td>
+                                <td style="padding: 10px 16px; text-align: center; font-size: 0.9em; color: #495057;">${item.quantidade}</td>
+                                <td style="padding: 10px 16px; text-align: right; font-size: 0.9em; color: #212529;">R$ ${item.subtotal.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="padding: 10px 16px; text-align: right; border-top: 1px solid #dee2e6; background: #f8f9fa;">
+                    <span style="font-size: 0.85em; color: #6c757d;">Total do pedido: </span>
+                    <span style="font-weight: 700; font-size: 1em; color: #212529;">R$ ${pedido.valorTotal.toFixed(2)}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    },
+
 
     /**
      * ================================================================
