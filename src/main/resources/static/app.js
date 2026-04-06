@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            const clienteId = document.getElementById('input-cliente-id')?.value;
+            const clienteId = ClientModule.state.usuarioLogado?.id;
             const enderecoId = document.getElementById('select-endereco')?.value;
             const cartaoId = document.getElementById('select-cartao-1')?.value;
             const metodoSelecionado = document.getElementById('select-tipo-pagamento')?.value || 'CARTAO';
